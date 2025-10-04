@@ -1,73 +1,90 @@
-# Welcome to your Lovable project
+# Kuis Belajar - Interactive Learning App
 
-## Project info
+An engaging and interactive quiz application designed for Indonesian children to learn reading skills through fun and educational quizzes.
 
-**URL**: https://lovable.dev/projects/31dae8f0-8d3e-4325-b6bc-df80fd112f4a
+## 🎯 Features
 
-## How can I edit this code?
+### 5 Quiz Types
 
-There are several ways of editing your application.
+1. **Suku Kata (Syllables)** - 130 Questions
+   - Learn to read syllables like "Ba", "Ka", "Ma"
+   - Complete A-Z consonant + vowel combinations
+   - Three difficulty levels: Mudah, Sedang, Sulit
 
-**Use Lovable**
+2. **Awal Kata (First Letter)** - 150 Questions
+   - Identify the first letter of words
+   - Visual learning with emoji clues
+   - Common everyday vocabulary
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/31dae8f0-8d3e-4325-b6bc-df80fd112f4a) and start prompting.
+3. **Akhir Kata (Last Letter)** - 120 Questions
+   - Guess the last letter of words
+   - Audio pronunciation support
+   - Popular Indonesian words
 
-Changes made via Lovable will be committed automatically to this repo.
+4. **Tengah Kata (Middle Letter)** - 100 Questions
+   - Find the missing middle letter
+   - Interactive word completion
+   - Engaging visual hints
 
-**Use your preferred IDE**
+5. **Lengkapi Suku Kata (Complete Syllable)** - 80 Questions
+   - Complete words with correct syllables
+   - Everyday vocabulary practice
+   - Audio pronunciation guide
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Key Features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- 🔊 **Text-to-Speech (TTS)** - Hear proper pronunciation for every question
+- ⏱️ **Timer Options** - Choose from no timer, 5s, 10s, 15s, or 20s per question
+- 📊 **Progress Tracking** - Save and view your learning history
+- ⚙️ **Customizable Settings** - Adjust questions per session (5 or 10)
+- 🎯 **Smart Memory** - Remember answered questions across sessions
+- ⭐ **Star Rewards** - Get stars based on performance
+- 📈 **Statistics** - Track total sessions, questions, and average scores
 
-Follow these steps:
+## 🎨 Design
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Playful, child-friendly interface with bright colors
+- Nunito font for excellent readability
+- Smooth animations and transitions
+- Emoji-based visual learning
+- Responsive design for all devices
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🚀 Getting Started
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. Grant audio permission for text-to-speech functionality
+2. Complete the onboarding tutorial
+3. Select your preferred quiz type
+4. Start learning!
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## 🛠️ Technology Stack
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
+- React 18
 - TypeScript
-- React
-- shadcn-ui
 - Tailwind CSS
+- Vite
+- shadcn/ui components
+- Web Speech API for TTS
 
-## How can I deploy this project?
+## 📱 Screens
 
-Simply open [Lovable](https://lovable.dev/projects/31dae8f0-8d3e-4325-b6bc-df80fd112f4a) and click on Share -> Publish.
+1. Audio Permission
+2. Onboarding
+3. Home
+4. Quiz Selection
+5. Quiz Interface
+6. Results
+7. Settings
+8. History
 
-## Can I connect a custom domain to my Lovable project?
+## 🎓 Educational Value
 
-Yes, you can!
+This app helps children:
+- Learn Indonesian syllables and letters
+- Develop reading skills through interactive play
+- Improve pronunciation with audio support
+- Build vocabulary with everyday words
+- Track their learning progress
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📄 License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Created with ❤️ for Indonesian children's education.

@@ -274,10 +274,13 @@ const Quiz = ({ quizType, settings, appState, setAppState, onComplete, onBack }:
           )}
           
           <div className="text-center mb-6">
-            <h2 className="text-6xl font-bold mb-4">
-              {currentQuestion.display}
-            </h2>
-            
+            {/* Hide the syllable display for suku kata quizzes */}
+            {quizType !== 'suku_kata' && (
+              <h2 className="text-6xl font-bold mb-4">
+                {currentQuestion.display}
+              </h2>
+            )}
+
             <p className="text-xl text-muted-foreground mb-4">
               {currentQuestion.prompt || 'Dengarkan audio dan pilih jawaban yang benar'}
             </p>

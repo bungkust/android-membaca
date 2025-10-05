@@ -15,10 +15,17 @@ interface SettingsProps {
 const Settings = ({ settings, onUpdateSettings, onResetProgress, onBack }: SettingsProps) => {
   const [localSettings, setLocalSettings] = useState(settings);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   const handleSave = () => {
     onUpdateSettings(localSettings);
-    onBack();
+    setShowSaveSuccess(true);
+
+    // Auto-hide success message after 2 seconds, then navigate back
+    setTimeout(() => {
+      setShowSaveSuccess(false);
+      onBack();
+    }, 2000);
   };
 
   const handleTestAudio = () => {
@@ -200,6 +207,22 @@ const Settings = ({ settings, onUpdateSettings, onResetProgress, onBack }: Setti
           💾 Simpan Pengaturan
         </Button>
       </div>
+
+      {/* Success Popup */}
+      {showSaveSuccess && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center animate-in fade-in-0 zoom-in-95 duration-300">
+            <div className="text-6xl mb-4">✅</div>
+            <h2 className="text-2xl font-bold mb-2 text-green-600">Berhasil Disimpan!</h2>
+            <p className="text-muted-foreground mb-4">
+              Pengaturan Anda telah berhasil disimpan dan akan diterapkan pada sesi kuis berikutnya.
+            </p>
+            <div className="text-sm text-muted-foreground">
+              Kembali ke menu utama dalam 2 detik...
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

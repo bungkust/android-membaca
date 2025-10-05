@@ -1,7 +1,7 @@
 {
-  "name": "Kuis Belajar",
+  "name": "Kuis Belajar Membaca",
   "short_name": "KuisBelajar",
-  "description": "Aplikasi pembelajaran interaktif dengan berbagai jenis kuis untuk anak-anak",
+  "description": "Aplikasi pembelajaran interaktif dengan 900+ soal untuk anak-anak belajar membaca dalam bahasa Indonesia",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,6 +10,14 @@
   "scope": "/",
   "lang": "id",
   "categories": ["education", "games", "productivity"],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
   "icons": [
     {
       "src": "/icon-72x72.png",

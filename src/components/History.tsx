@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SessionHistory } from "@/types/quiz";
-import { ArrowLeft, Star } from "lucide-react";
+import { ArrowLeft, Star, ChevronDown, ChevronUp, XCircle } from "lucide-react";
 
 interface HistoryProps {
   sessionHistory: SessionHistory[];
@@ -14,6 +14,19 @@ const History = ({ sessionHistory, onBack, onClearHistory, onQuizSelection }: Hi
   const [filter, setFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+
+  const toggleSessionExpansion = (sessionId: string) => {
+    setExpandedSessions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sessionId)) {
+        newSet.delete(sessionId);
+      } else {
+        newSet.add(sessionId);
+      }
+      return newSet;
+    });
+  };
 
   const getQuizTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -193,8 +206,23 @@ const History = ({ sessionHistory, onBack, onClearHistory, onQuizSelection }: Hi
                       <div className="font-bold text-xl">
                         {getQuizTypeLabel(session.quizType)}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {date.toLocaleDateString('id-ID')} {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm text-muted-foreground">
+                          {date.toLocaleDateString('id-ID')} {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleSessionExpansion(session.id)}
+                          className="text-xs"
+                        >
+                          {expandedSessions.has(session.id) ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                          Detail
+                        </Button>
                       </div>
                     </div>
                     
@@ -221,11 +249,67 @@ const History = ({ sessionHistory, onBack, onClearHistory, onQuizSelection }: Hi
 
                       <div className="flex-1 bg-muted rounded-xl p-4">
                         <div className="text-3xl font-bold">
-                          {Math.floor((session.duration || 0) / 60000)}m
+                          {(() => {
+                            const duration = session.duration || 0;
+                            const minutes = Math.floor(duration / 60000);
+                            const seconds = Math.floor((duration % 60000) / 1000);
+                            
+                            // Debug logging
+                            console.log('⏱️ SESSION DURATION DEBUG:', {
+                              sessionId: session.id,
+                              rawDuration: duration,
+                              minutes,
+                              seconds,
+                              isValid: duration > 0
+                            });
+                            
+                            return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                          })()}
                         </div>
                         <div className="text-sm text-muted-foreground">Waktu</div>
                       </div>
                     </div>
+
+                    {/* Expandable Details Section */}
+                    {expandedSessions.has(session.id) && (
+                      <div className="mt-4 pt-4 border-t border-border">
+                        {session.wrongAnswers.length > 0 ? (
+                          <>
+                            <h4 className="font-bold text-lg mb-3 flex items-center gap-2">
+                              <XCircle className="w-5 h-5 text-destructive" />
+                              Soal yang Salah ({session.wrongAnswers.length})
+                            </h4>
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                              {session.wrongAnswers.map((wrongAnswer, index) => (
+                                <div key={index} className="bg-card rounded-xl p-4">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <div className="font-bold text-lg">
+                                      {wrongAnswer.question.display}
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Jawaban kamu: <span className="text-destructive font-bold">{wrongAnswer.userAnswer}</span>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Jawaban benar: <span className="text-success font-bold">{wrongAnswer.question.answer}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-4">
+                            <div className="text-4xl mb-2">🎉</div>
+                            <h4 className="font-bold text-lg mb-2 text-success">
+                              Sesi Sempurna!
+                            </h4>
+                            <p className="text-muted-foreground">
+                              Tidak ada soal yang salah. Kerja bagus! 🌟
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -170,20 +170,21 @@ const generateAkhirKataQuestions = (): Question[] => {
 // Tengah Kata questions (150 questions) - from document
 const tengahKataData = [
   { word: 'Matahari', image: '☀️', answer: 'a', choices: ['A', 'I', 'U'] },
-  { word: 'Bulan', image: '🌙', answer: 'a', choices: ['U', 'O', 'A'] },
+  { word: 'Bulan', image: '🌙', answer: 'u', choices: ['U', 'O', 'A'] },
   { word: 'Bintang', image: '⭐', answer: 'a', choices: ['I', 'A', 'U'] },
-  { word: 'Mobil', image: '🚗', answer: 'i', choices: ['O', 'A', 'I'] },
+  { word: 'Mobil', image: '🚗', answer: 'o', choices: ['O', 'A', 'I'] },
   { word: 'Sepeda', image: '🚲', answer: 'e', choices: ['E', 'A', 'I'] },
-  { word: 'Bus', image: '��', answer: 'u', choices: ['U', 'O', 'A'] },
+  { word: 'Bus', image: '🚌', answer: 'u', choices: ['U', 'O', 'A'] },
   { word: 'Kereta', image: '🚆', answer: 'e', choices: ['E', 'A', 'I'] },
   { word: 'Pesawat', image: '✈️', answer: 'a', choices: ['E', 'A', 'I'] },
   { word: 'Kapal', image: '⛵', answer: 'a', choices: ['A', 'I', 'U'] },
   { word: 'Boneka', image: '🧸', answer: 'e', choices: ['O', 'A', 'I'] },
-  { word: 'Bola', image: '⚽', answer: 'a', choices: ['O', 'A', 'I'] },
-  { word: 'Balok', image: '🧱', answer: 'o', choices: ['A', 'I', 'U'] },
-  { word: 'Kunci', image: '🔑', answer: 'i', choices: ['U', 'O', 'A'] },
+  { word: 'Bola', image: '⚽', answer: 'o', choices: ['O', 'A', 'I'] },
+  { word: 'Balok', image: '🧱', answer: 'a', choices: ['A', 'I', 'U'] },
+  { word: 'Kunci', image: '🔑', answer: 'u', choices: ['U', 'O', 'A'] },
   { word: 'Kertas', image: '📄', answer: 'a', choices: ['E', 'A', 'I'] }
 ];
+
 
 
 

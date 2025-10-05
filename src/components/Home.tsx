@@ -12,15 +12,26 @@ const Home = ({ onStartQuiz }: HomeProps) => {
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('🎉 PWA Install prompt available!', e);
       e.preventDefault();
       setDeferredPrompt(e);
       setCanInstall(true);
     };
 
     const handleAppInstalled = () => {
+      console.log('✅ App installed successfully!');
       setCanInstall(false);
       setDeferredPrompt(null);
     };
+
+    // Check if already installed or if browser supports PWA
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('📱 App is already installed');
+      setCanInstall(false);
+    } else {
+      console.log('🔍 Checking PWA install availability...');
+      setCanInstall(true); // Show button for testing
+    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -33,12 +44,21 @@ const Home = ({ onStartQuiz }: HomeProps) => {
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
+      console.log('🚀 Triggering PWA install prompt...');
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
+      console.log('📱 Install outcome:', outcome);
       if (outcome === 'accepted') {
+        console.log('✅ User accepted install');
         setDeferredPrompt(null);
         setCanInstall(false);
+      } else {
+        console.log('❌ User declined install');
       }
+    } else {
+      console.log('⚠️ No deferred prompt available');
+      // Try to force show button anyway for testing
+      alert('Install prompt not available, but trying manual install...');
     }
   };
 
@@ -80,6 +100,23 @@ const Home = ({ onStartQuiz }: HomeProps) => {
                 📱 Install Aplikasi
               </Button>
             )}
+
+            {/* Fallback button for testing */}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="w-full text-sm py-2 opacity-50 hover:opacity-75"
+              onClick={() => {
+                console.log('🔧 Debug info:');
+                console.log('canInstall:', canInstall);
+                console.log('deferredPrompt:', deferredPrompt);
+                console.log('Browser support:', 'serviceWorker' in navigator);
+                console.log('Display mode:', window.matchMedia?.('(display-mode: standalone)')?.matches);
+                alert('Check console for PWA debug info');
+              }}
+            >
+              🔧 Debug PWA
+            </Button>
           </div>
         </div>
       </div>

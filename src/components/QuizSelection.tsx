@@ -131,7 +131,7 @@ const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory }: 
 
       {/* Settings and History buttons at the bottom */}
       {(onOpenSettings || onOpenHistory) && (
-        <div className="mt-8 p-4 bg-card/50 backdrop-blur-sm border-t">
+        <div className="mt-8 p-4 bg-card/30 backdrop-blur-sm border-t border-border/20">
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-2 gap-4">
               {onOpenSettings && (

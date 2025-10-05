@@ -8,32 +8,35 @@
   to = "/index.html"
   status = 200
 
-# Explicit headers for proper MIME types
+# Explicit MIME type headers for all static assets
 [[headers]]
-  for = "/assets/*"
+  for = "/assets/*.js"
   [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
     X-Content-Type-Options = "nosniff"
 
-# Force JavaScript files to be served with correct MIME type
 [[headers]]
-  for = "*.js"
+  for = "/assets/*.css"
   [headers.values]
-    Content-Type = "application/javascript"
+    Content-Type = "text/css; charset=utf-8"
     Cache-Control = "public, max-age=31536000, immutable"
+    X-Content-Type-Options = "nosniff"
 
-# Force CSS files to be served with correct MIME type
+# Additional headers for root-level assets
 [[headers]]
-  for = "*.css"
+  for = "/*.js"
   [headers.values]
-    Content-Type = "text/css"
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Force HTML files to be served with correct MIME type
-[[headers]]
-  for = "*.html"
-  [headers.values]
-    Content-Type = "text/html"
+    Content-Type = "application/javascript; charset=utf-8"
     Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Content-Type = "text/css; charset=utf-8"
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
 
 [build.environment]
   NODE_VERSION = "18"

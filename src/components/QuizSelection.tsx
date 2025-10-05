@@ -1,13 +1,13 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Settings, History, Trophy, Target, Clock, TrendingUp } from "lucide-react";
-import { SessionHistory } from "@/types/quiz";
+import { ArrowLeft, Settings, History, Star } from "lucide-react";
 
 interface QuizSelectionProps {
   onSelectQuiz: (type: 'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_kata' | 'lengkapi_suku_kata' | 'lengkapi_suku_kata_belakang') => void;
   onBack: () => void;
   onOpenSettings?: () => void;
   onOpenHistory?: () => void;
-  sessionHistory?: SessionHistory[];
+  sessionHistory?: any[];
 }
 
 const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory, sessionHistory = [] }: QuizSelectionProps) => {
@@ -15,29 +15,29 @@ const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory, se
     {
       id: 'suku_kata' as const,
       emoji: '📚',
-      title: 'Kuis Suku Kata',
-      description: 'Belajar membaca suku kata seperti "Ba", "Ka", "Ma"',
+      title: 'Suku Kata',
+      description: 'Pelajari suku kata dasar',
       count: '130 Soal',
-      badge: 'A-Z Lengkap',
-      gradient: 'from-primary to-accent'
+      badge: 'Dasar',
+      gradient: 'from-blue-500 to-purple-600'
     },
     {
       id: 'awal_kata' as const,
       emoji: '🔤',
-      title: 'Kuis Awal Kata',
-      description: 'Tebak huruf pertama dari kata yang didengar',
+      title: 'Awal Kata',
+      description: 'Tebak huruf awal dari kata',
       count: '150 Soal',
-      badge: 'Kata Sehari-hari',
-      gradient: 'from-accent to-success'
+      badge: 'Huruf Awal',
+      gradient: 'from-green-500 to-teal-600'
     },
     {
       id: 'akhir_kata' as const,
       emoji: '🎯',
-      title: 'Kuis Akhir Kata',
-      description: 'Tebak huruf terakhir dari kata yang didengar',
+      title: 'Akhir Kata',
+      description: 'Tebak huruf akhir dari kata',
       count: '120 Soal',
-      badge: 'Kata Populer',
-      gradient: 'from-secondary to-warning'
+      badge: 'Huruf Akhir',
+      gradient: 'from-orange-500 to-red-600'
     },
     {
       id: 'tengah_kata' as const,
@@ -68,24 +68,40 @@ const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory, se
     }
   ];
 
-  // Calculate score summary
-  const totalSessions = sessionHistory.length;
-  const averageScore = totalSessions > 0 ? Math.round(sessionHistory.reduce((acc, session) => acc + (session.score / session.totalQuestions * 100), 0) / totalSessions) : 0;
-  const bestScore = totalSessions > 0 ? Math.max(...sessionHistory.map(session => session.score / session.totalQuestions * 100)) : 0;
-  const totalQuestionsAnswered = sessionHistory.reduce((acc, session) => acc + session.totalQuestions, 0);
+  // Calculate total stars earned across all quiz types
+  const getTotalStars = () => {
+    return sessionHistory.reduce((total, session) => total + (session.stars || 0), 0);
+  };
 
-  // Get recent sessions for streak calculation
-  const recentSessions = sessionHistory
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 5);
+  // Calculate stars for each quiz type (for individual display)
+  const calculateQuizStars = (quizType: string) => {
+    const sessions = sessionHistory.filter(session => session.quizType === quizType);
+    if (sessions.length === 0) return 0;
 
-  const currentStreak = recentSessions.length > 0 && recentSessions.every(session => (session.score / session.totalQuestions) >= 0.8)
-    ? recentSessions.length
-    : 0;
+    const totalStars = sessions.reduce((sum, session) => sum + (session.stars || 0), 0);
+    return Math.min(totalStars, 3); // Cap at 3 stars max per quiz type
+  };
+
+  const renderStars = (starCount: number) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3].map((star) => (
+          <Star
+            key={star}
+            className={`w-4 h-4 ${
+              star <= starCount
+                ? 'text-yellow-400 fill-yellow-400'
+                : 'text-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 flex flex-col p-4 py-8">
-      <div className="max-w-4xl mx-auto flex-1">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 p-4 py-8">
+      <div className="max-w-4xl mx-auto">
         <Button
           variant="ghost"
           size="lg"
@@ -102,125 +118,113 @@ const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory, se
               Pilih Jenis Kuis
             </span>
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground mb-6">
             Pilih jenis kuis yang ingin dimainkan!
           </p>
+
+          {/* Star Summary */}
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 border-2 border-yellow-200">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-6 h-6 ${
+                      star <= getTotalStars()
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-2xl font-bold text-yellow-700">
+                {getTotalStars()}/15 Bintang
+              </span>
+            </div>
+            <p className="text-sm text-yellow-600">
+              Total bintang yang telah kamu kumpulkan dari semua kuis!
+            </p>
+          </div>
         </div>
 
-        {/* Score Summary */}
-        {totalSessions > 0 && (
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-3xl shadow-playful p-6 mb-8 border border-primary/20">
-            <div className="flex items-center justify-center mb-4">
-              <Trophy className="w-6 h-6 text-primary mr-2" />
-              <h2 className="text-2xl font-bold text-primary">Ringkasan Pencapaian</h2>
-            </div>
+        {/* Settings and History buttons */}
+        {(onOpenSettings || onOpenHistory) && (
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            {onOpenSettings && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-20 text-base bg-card hover:bg-muted border-2 shadow-button btn-bounce"
+                onClick={onOpenSettings}
+              >
+                <Settings className="w-5 h-5 mr-2" />
+                Pengaturan
+              </Button>
+            )}
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-card/50 rounded-2xl">
-                <div className="text-3xl font-bold text-primary mb-1">{totalSessions}</div>
-                <div className="text-sm text-muted-foreground">Total Sesi</div>
-              </div>
-
-              <div className="text-center p-4 bg-card/50 rounded-2xl">
-                <div className="text-3xl font-bold text-accent mb-1">{averageScore}%</div>
-                <div className="text-sm text-muted-foreground">Rata-rata Skor</div>
-              </div>
-
-              <div className="text-center p-4 bg-card/50 rounded-2xl">
-                <div className="text-3xl font-bold text-success mb-1">{bestScore}%</div>
-                <div className="text-sm text-muted-foreground">Skor Terbaik</div>
-              </div>
-
-              <div className="text-center p-4 bg-card/50 rounded-2xl">
-                <div className="text-3xl font-bold text-secondary mb-1">{totalQuestionsAnswered}</div>
-                <div className="text-sm text-muted-foreground">Soal Dijawab</div>
-              </div>
-            </div>
-
-            {currentStreak > 0 && (
-              <div className="mt-4 text-center">
-                <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-success/20 to-primary/20 rounded-full border border-success/30">
-                  <TrendingUp className="w-4 h-4 text-success mr-2" />
-                  <span className="text-sm font-semibold text-success">
-                    🔥 Streak {currentStreak} kuis berturut-turut dengan skor 80%+
-                  </span>
-                </div>
-              </div>
+            {onOpenHistory && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-20 text-base bg-card hover:bg-muted border-2 shadow-button btn-bounce"
+                onClick={onOpenHistory}
+              >
+                <History className="w-5 h-5 mr-2" />
+                Riwayat
+              </Button>
             )}
           </div>
         )}
 
         <div className="grid md:grid-cols-2 gap-6">
-          {quizTypes.map((quiz) => (
-            <div
-              key={quiz.id}
-              className="bg-card rounded-3xl shadow-playful p-6 hover:scale-105 transition-transform slide-up"
-            >
-              <div className={`w-20 h-20 bg-gradient-to-br ${quiz.gradient} rounded-2xl flex items-center justify-center mb-4`}>
-                <span className="text-4xl">{quiz.emoji}</span>
-              </div>
-
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                {quiz.title}
-              </h2>
-
-              <p className="text-muted-foreground mb-4">
-                {quiz.description}
-              </p>
-
-              <div className="flex gap-2 mb-6">
-                <span className="px-3 py-1 bg-muted rounded-full text-sm font-semibold text-foreground">
-                  {quiz.count}
-                </span>
-                <span className="px-3 py-1 bg-primary/10 rounded-full text-sm font-semibold text-primary">
-                  {quiz.badge}
-                </span>
-              </div>
-
-              <Button
-                className={`w-full bg-gradient-to-r ${quiz.gradient} hover:opacity-90 transition-all shadow-button btn-bounce`}
-                size="lg"
-                onClick={() => onSelectQuiz(quiz.id)}
+          {quizTypes.map((quiz) => {
+            const stars = calculateQuizStars(quiz.id);
+            return (
+              <div
+                key={quiz.id}
+                className="bg-card rounded-3xl shadow-playful p-6 hover:scale-105 transition-transform slide-up"
               >
-                🚀 Mulai Kuis
-              </Button>
-            </div>
-          ))}
+                <div className={`w-20 h-20 bg-gradient-to-br ${quiz.gradient} rounded-2xl flex items-center justify-center mb-4`}>
+                  <span className="text-4xl">{quiz.emoji}</span>
+                </div>
+
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-2xl font-bold text-foreground">
+                    {quiz.title}
+                  </h2>
+                  {renderStars(stars)}
+                </div>
+
+                <p className="text-muted-foreground mb-4">
+                  {quiz.description}
+                </p>
+
+                <div className="flex gap-2 mb-6">
+                  <span className="px-3 py-1 bg-muted rounded-full text-sm font-semibold text-foreground">
+                    {quiz.count}
+                  </span>
+                  <span className="px-3 py-1 bg-primary/10 rounded-full text-sm font-semibold text-primary">
+                    {quiz.badge}
+                  </span>
+                  {stars > 0 && (
+                    <span className="px-3 py-1 bg-yellow-100 rounded-full text-sm font-semibold text-yellow-800">
+                      ⭐ {stars} Bintang
+                    </span>
+                  )}
+                </div>
+
+                <Button
+                  className={`w-full bg-gradient-to-r ${quiz.gradient} hover:opacity-90 transition-all shadow-button btn-bounce`}
+                  size="lg"
+                  onClick={() => onSelectQuiz(quiz.id)}
+                >
+                  🚀 Mulai Kuis
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </div>
-
-      {/* Settings and History buttons at the bottom */}
-      {(onOpenSettings || onOpenHistory) && (
-        <div className="mt-8 p-4 bg-card/30 backdrop-blur-sm border-t border-border/20">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-2 gap-4">
-              {onOpenSettings && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-20 text-base bg-card hover:bg-muted border-2 shadow-button btn-bounce"
-                  onClick={onOpenSettings}
-                >
-                  <Settings className="w-5 h-5 mr-2" />
-                  Pengaturan
-                </Button>
-              )}
-
-              {onOpenHistory && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-20 text-base bg-card hover:bg-muted border-2 shadow-button btn-bounce"
-                  onClick={onOpenHistory}
-                >
-                  <History className="w-5 h-5 mr-2" />
-                  Riwayat
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

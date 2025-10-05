@@ -107,24 +107,34 @@ const Index = () => {
   };
 
   const handleQuizComplete = (finalScore: number, wrongAnswers: any[]) => {
-    // Save session to history
+    // Calculate stars earned based on accuracy
+    const totalQuestions = appState.currentSession.length;
+    const accuracy = finalScore / totalQuestions;
+
+    let stars = 0;
+    if (accuracy >= 0.9) stars = 3; // 90%+ accuracy
+    else if (accuracy >= 0.7) stars = 2; // 70-89% accuracy
+    else if (accuracy >= 0.5) stars = 1; // 50-69% accuracy
+
+    // Save session to history with stars
     const session: SessionHistory = {
       id: Date.now().toString(),
       quizType: selectedQuizType,
       score: finalScore,
-      totalQuestions: appState.currentSession.length,
+      totalQuestions: totalQuestions,
       timestamp: Date.now(),
       wrongAnswers: wrongAnswers,
-      duration: Date.now() - (appState.currentSessionStart || Date.now())
+      duration: Date.now() - (appState.currentSessionStart || Date.now()),
+      stars: stars
     };
-    
+
     const newHistory = [session, ...appState.sessionHistory];
     setAppState(prev => ({
       ...prev,
       sessionHistory: newHistory
     }));
     localStorage.setItem('sessionHistory', JSON.stringify(newHistory));
-    
+
     setScreen('RESULTS');
   };
 

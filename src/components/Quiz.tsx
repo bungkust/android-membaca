@@ -191,7 +191,17 @@ const Quiz = ({ quizType, settings, appState, setAppState, onComplete, onBack }:
             
             <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-full shadow-button">
               <span className="text-2xl">⭐</span>
-              <span className="text-xl font-bold">{appState.score}</span>
+              <span className="text-xl font-bold">
+                {(() => {
+                  const currentAccuracy = appState.currentSession.length > 0
+                    ? appState.score / appState.currentSession.length
+                    : 0;
+                  if (currentAccuracy >= 0.9) return 3;
+                  if (currentAccuracy >= 0.7) return 2;
+                  if (currentAccuracy >= 0.5) return 1;
+                  return 0;
+                })()}
+              </span>
             </div>
           </div>
         </div>

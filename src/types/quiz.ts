@@ -31,6 +31,7 @@ export interface SessionHistory {
   timestamp: number;
   wrongAnswers: WrongAnswer[];
   duration: number;
+  stars?: number; // Stars earned in this session
 }
 
 export interface AppState {

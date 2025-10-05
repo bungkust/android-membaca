@@ -2,10 +2,38 @@
   publish = "dist"
   command = "npm run build"
 
+# SPA fallback - redirect all unknown routes to index.html for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Explicit headers for proper MIME types
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+
+# Force JavaScript files to be served with correct MIME type
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Force CSS files to be served with correct MIME type
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Content-Type = "text/css"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Force HTML files to be served with correct MIME type
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Content-Type = "text/html"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [build.environment]
   NODE_VERSION = "18"

@@ -28,7 +28,8 @@ const Index = () => {
     wrongAnswers: [],
     seenIds: new Set(),
     sessionHistory: [],
-    currentSessionStart: null
+    currentSessionStart: null,
+    currentStars: 0
   });
 
   // Load saved data on mount
@@ -107,25 +108,19 @@ const Index = () => {
   };
 
   const handleQuizComplete = (finalScore: number, wrongAnswers: any[]) => {
-    // Calculate stars earned based on accuracy
-    const totalQuestions = appState.currentSession.length;
-    const accuracy = finalScore / totalQuestions;
+    // Use the stars earned during the quiz session
+    const starsEarned = appState.currentStars || 0;
 
-    let stars = 0;
-    if (accuracy >= 0.9) stars = 3; // 90%+ accuracy
-    else if (accuracy >= 0.7) stars = 2; // 70-89% accuracy
-    else if (accuracy >= 0.5) stars = 1; // 50-69% accuracy
-
-    // Save session to history with stars
+    // Save session to history with stars earned during session
     const session: SessionHistory = {
       id: Date.now().toString(),
       quizType: selectedQuizType,
       score: finalScore,
-      totalQuestions: totalQuestions,
+      totalQuestions: appState.currentSession.length,
       timestamp: Date.now(),
       wrongAnswers: wrongAnswers,
       duration: Date.now() - (appState.currentSessionStart || Date.now()),
-      stars: stars
+      stars: starsEarned
     };
 
     const newHistory = [session, ...appState.sessionHistory];
@@ -155,7 +150,8 @@ const Index = () => {
       wrongAnswers: [],
       seenIds: new Set(),
       sessionHistory: [],
-      currentSessionStart: null
+      currentSessionStart: null,
+      currentStars: 0
     });
     localStorage.removeItem('seenIds');
     localStorage.removeItem('sessionHistory');

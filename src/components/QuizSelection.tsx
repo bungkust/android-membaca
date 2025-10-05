@@ -79,7 +79,7 @@ const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory, se
     if (sessions.length === 0) return 0;
 
     const totalStars = sessions.reduce((sum, session) => sum + (session.stars || 0), 0);
-    return Math.min(totalStars, 3); // Cap at 3 stars max per quiz type
+    return totalStars; // No cap - show actual stars earned
   };
 
   return (

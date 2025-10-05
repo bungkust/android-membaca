@@ -42,4 +42,5 @@ export interface AppState {
   seenIds: Set<string>;
   sessionHistory: SessionHistory[];
   currentSessionStart: number | null;
+  currentStars?: number; // Stars earned in current session
 }

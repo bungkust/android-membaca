@@ -37,7 +37,8 @@ const Quiz = ({ quizType, settings, appState, setAppState, onComplete, onBack }:
       currentQuestionIndex: 0,
       score: 0,
       wrongAnswers: [],
-      currentSessionStart: Date.now()
+      currentSessionStart: Date.now(),
+      currentStars: 0
     }));
     
     setCurrentQuestion(questions[0]);
@@ -96,18 +97,11 @@ const Quiz = ({ quizType, settings, appState, setAppState, onComplete, onBack }:
     setShowFeedback(true);
     
     if (correct) {
-      setAppState(prev => {
-        const newState = {
-          ...prev,
-          score: prev.score + 1
-        };
-        console.log('✅ Score updated:', {
-          oldScore: prev.score,
-          newScore: newState.score,
-          currentSessionLength: prev.currentSession.length
-        });
-        return newState;
-      });
+      setAppState(prev => ({
+        ...prev,
+        score: prev.score + 1,
+        currentStars: (prev.currentStars || 0) + 1
+      }));
       // Note: TTS feedback disabled
     } else {
       // Note: TTS feedback disabled
@@ -200,23 +194,7 @@ const Quiz = ({ quizType, settings, appState, setAppState, onComplete, onBack }:
             <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-full shadow-button">
               <span className="text-2xl">⭐</span>
               <span className="text-xl font-bold">
-                {(() => {
-                  const currentScore = appState.score;
-                  const totalQuestions = appState.currentSession.length;
-                  const currentAccuracy = totalQuestions > 0 ? currentScore / totalQuestions : 0;
-
-                  console.log('🔍 Star Debug:', {
-                    currentScore,
-                    totalQuestions,
-                    currentAccuracy,
-                    calculatedStars: currentAccuracy >= 0.9 ? 3 : currentAccuracy >= 0.7 ? 2 : currentAccuracy >= 0.5 ? 1 : 0
-                  });
-
-                  if (currentAccuracy >= 0.9) return 3;
-                  if (currentAccuracy >= 0.7) return 2;
-                  if (currentAccuracy >= 0.5) return 1;
-                  return 0;
-                })()}
+                {appState.currentStars || 0}
               </span>
             </div>
           </div>

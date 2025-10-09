@@ -32,8 +32,21 @@ const Settings = ({ settings, onUpdateSettings, onResetProgress, onBack }: Setti
     }
   }, []);
 
+  // Initialize selectedVoice from settings
+  useEffect(() => {
+    if (settings.selectedVoice) {
+      setSelectedVoice(settings.selectedVoice);
+    }
+  }, [settings.selectedVoice]);
+
   const handleTestVoice = (voiceName: string) => {
     speak('Halo, ini adalah tes suara untuk anak-anak belajar membaca', voiceName);
+  };
+
+  const handleVoiceChange = (voiceName: string) => {
+    setSelectedVoice(voiceName);
+    setLocalSettings({ ...localSettings, selectedVoice: voiceName });
+    handleTestVoice(voiceName);
   };
 
   const handleSave = () => {
@@ -150,10 +163,7 @@ const Settings = ({ settings, onUpdateSettings, onResetProgress, onBack }: Setti
             <label className="text-lg font-bold mb-3 block">Suara TTS:</label>
             <select
               value={selectedVoice}
-              onChange={(e) => {
-                setSelectedVoice(e.target.value);
-                handleTestVoice(e.target.value);
-              }}
+              onChange={(e) => handleVoiceChange(e.target.value)}
               className="w-full p-3 rounded-xl border-2 border-primary/20 bg-card text-lg font-semibold focus:border-primary focus:outline-none"
             >
               <option value="auto">Otomatis (Direkomendasikan)</option>

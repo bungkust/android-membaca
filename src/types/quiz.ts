@@ -16,6 +16,7 @@ export interface Settings {
   questionsPerSession: number;
   rememberAcrossSessions: boolean;
   timerSeconds: number;
+  selectedVoice?: string; // TTS voice preference
 }
 
 export interface WrongAnswer {

@@ -20,7 +20,8 @@ const Index = () => {
   const [settings, setSettings] = useState<SettingsType>({
     questionsPerSession: 10,
     rememberAcrossSessions: true,
-    timerSeconds: 0
+    timerSeconds: 0,
+    selectedVoice: 'auto'
   });
   
   const [appState, setAppState] = useState<AppState>({
@@ -203,6 +204,12 @@ const Index = () => {
       sessionHistory: [],
       currentSessionStart: null,
       currentStars: 0
+    });
+    setSettings({
+      questionsPerSession: 10,
+      rememberAcrossSessions: true,
+      timerSeconds: 0,
+      selectedVoice: 'auto'
     });
     localStorage.removeItem('seenIds');
     localStorage.removeItem('sessionHistory');

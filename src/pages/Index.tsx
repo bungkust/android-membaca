@@ -8,13 +8,14 @@ import Results from "@/components/Results";
 import Settings from "@/components/Settings";
 import InstallInstructions from "@/components/InstallInstructions";
 import History from "@/components/History";
+import MengenalSukuKata from "@/components/MengenalSukuKata";
 import { Settings as SettingsType, AppState, SessionHistory } from "@/types/quiz";
 
 const Index = () => {
-  const [screen, setScreen] = useState<'AUDIO_PERMISSION' | 'ONBOARDING' | 'HOME' | 'QUIZ_SELECTION' | 'QUIZ' | 'RESULTS' | 'SETTINGS' | 'HISTORY' | 'INSTALL'>('AUDIO_PERMISSION');
+  const [screen, setScreen] = useState<'AUDIO_PERMISSION' | 'ONBOARDING' | 'HOME' | 'QUIZ_SELECTION' | 'QUIZ' | 'MENGENAL_SUKU_KATA' | 'RESULTS' | 'SETTINGS' | 'HISTORY' | 'INSTALL'>('AUDIO_PERMISSION');
   const [audioPermissionGranted, setAudioPermissionGranted] = useState(false);
   const [onboardingSeen, setOnboardingSeen] = useState(false);
-  const [selectedQuizType, setSelectedQuizType] = useState<'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_kata' | 'lengkapi_suku_kata'>('suku_kata');
+  const [selectedQuizType, setSelectedQuizType] = useState<'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_kata' | 'lengkapi_suku_kata' | 'lengkapi_suku_kata_belakang' | 'mengenal_suku_kata'>('suku_kata');
   
   const [settings, setSettings] = useState<SettingsType>({
     questionsPerSession: 10,
@@ -104,7 +105,11 @@ const Index = () => {
 
   const handleQuizTypeSelect = (type: typeof selectedQuizType) => {
     setSelectedQuizType(type);
-    setScreen('QUIZ');
+    if (type === 'mengenal_suku_kata') {
+      setScreen('MENGENAL_SUKU_KATA');
+    } else {
+      setScreen('QUIZ');
+    }
   };
 
   const handleNavigateHome = () => {
@@ -239,6 +244,10 @@ const Index = () => {
           onComplete={handleQuizComplete}
           onBack={handleNavigateQuizSelection}
         />
+      )}
+
+      {screen === 'MENGENAL_SUKU_KATA' && (
+        <MengenalSukuKata onBack={handleNavigateQuizSelection} />
       )}
       
       {screen === 'RESULTS' && (

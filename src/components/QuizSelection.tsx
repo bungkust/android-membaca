@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings, History, Star, Trophy, Zap } from "lucide-react";
 
 interface QuizSelectionProps {
-  onSelectQuiz: (type: 'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_kata' | 'lengkapi_suku_kata' | 'lengkapi_suku_kata_belakang') => void;
+  onSelectQuiz: (type: 'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_kata' | 'lengkapi_suku_kata' | 'lengkapi_suku_kata_belakang' | 'mengenal_suku_kata') => void;
   onBack: () => void;
   onOpenSettings?: () => void;
   onOpenHistory?: () => void;
@@ -65,10 +65,17 @@ const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory, se
       count: '150 Soal',
       badge: 'Kata Sehari-hari',
       gradient: 'from-info to-primary'
+    },
+    {
+      id: 'mengenal_suku_kata' as const,
+      emoji: '🎡',
+      title: 'Mengenal Suku Kata',
+      description: 'Pelajari suku kata dengan memilih konsonan dan vokal',
+      count: '21 Konsonan + 5 Vokal',
+      badge: 'Interaktif',
+      gradient: 'from-pink-500 to-purple-600'
     }
   ];
-
-  // Calculate total stars earned across all quiz types
   const getTotalStars = () => {
     return sessionHistory.reduce((total, session) => total + (session.stars || 0), 0);
   };

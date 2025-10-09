@@ -1,6 +1,6 @@
-const CACHE_NAME = 'kuis-belajar-v1.5.7';
-const STATIC_CACHE = 'kuis-belajar-static-v1.5.7';
-const DYNAMIC_CACHE = 'kuis-belajar-dynamic-v1.5.7';
+const CACHE_NAME = 'kuis-belajar-v1.5.8';
+const STATIC_CACHE = 'kuis-belajar-static-v1.5.8';
+const DYNAMIC_CACHE = 'kuis-belajar-dynamic-v1.5.8';
 
 // Assets to cache immediately (critical for app functionality)
 const STATIC_ASSETS = [

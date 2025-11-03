@@ -1,6 +1,9 @@
 import { Question } from "@/types/quiz";
 
 const shuffleArray = <T,>(array: T[]): T[] => {
+  if (!array || !Array.isArray(array)) {
+    return [];
+  }
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -3464,19 +3467,25 @@ const lengkapiSukaKataData = [
 
 
 const generateLengkapiSukaKataQuestions = (): Question[] => {
-  return lengkapiSukaKataData.map(item => ({
-    id: item.id,
-    type: 'lengkapi_suku_kata' as const,
-    prompt: 'Lengkapi kata dengan suku kata yang tepat',
-    display: item.display,
-    ttsText: item.id,
-    answer: item.answer,
-    choices: shuffleArray(item.choices),
-    image: item.image,
-    word: item.id,
-    level: 'mudah',
-    tags: ['lengkapi_suku_kata']
-  }));
+  return lengkapiSukaKataData
+    .filter(item => item.id && item.display && item.answer && item.choices && Array.isArray(item.choices))
+    .map(item => {
+      // Double-check choices is an array before using it
+      const choices = Array.isArray(item.choices) ? item.choices : [];
+      return {
+        id: item.id!,
+        type: 'lengkapi_suku_kata' as const,
+        prompt: 'Lengkapi kata dengan suku kata yang tepat',
+        display: item.display!,
+        ttsText: item.id!,
+        answer: item.answer!,
+        choices: shuffleArray(choices),
+        image: item.image,
+        word: item.id!,
+        level: 'mudah' as const,
+        tags: ['lengkapi_suku_kata'] as const
+      };
+    });
 };
 
 export const generateQuizQuestions = (

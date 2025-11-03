@@ -1,6 +1,7 @@
-const CACHE_NAME = 'kuis-belajar-v1.5.9';
-const STATIC_CACHE = 'kuis-belajar-static-v1.5.9';
-const DYNAMIC_CACHE = 'kuis-belajar-dynamic-v1.5.9';
+const CACHE_NAME = 'kuis-belajar-v1.5.10';
+const STATIC_CACHE = 'kuis-belajar-static-v1.5.10';
+const DYNAMIC_CACHE = 'kuis-belajar-dynamic-v1.5.10';
+const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
 // Assets to cache immediately (critical for app functionality)
 const STATIC_ASSETS = [
@@ -97,6 +98,12 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-HTTP requests
   if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // In development, always prefer network-first to avoid stale caches during HMR
+  if (IS_DEV) {
+    event.respondWith(networkFirst(request));
     return;
   }
 

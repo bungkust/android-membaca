@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings, History, Star, Trophy, Zap } from "lucide-react";
+import { getAllQuizMetadata, QuizId } from "@/features/quiz";
 
 interface QuizSelectionProps {
-  onSelectQuiz: (type: 'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_suku_kata' | 'lengkapi_suku_kata' | 'lengkapi_suku_kata_belakang' | 'mengenal_suku_kata') => void;
+  onSelectQuiz: (type: QuizId) => void;
   onBack: () => void;
   onOpenSettings?: () => void;
   onOpenHistory?: () => void;
@@ -11,71 +12,8 @@ interface QuizSelectionProps {
 }
 
 const QuizSelection = ({ onSelectQuiz, onBack, onOpenSettings, onOpenHistory, sessionHistory = [] }: QuizSelectionProps) => {
-  const quizTypes = [
-    {
-      id: 'suku_kata' as const,
-      emoji: '📚',
-      title: 'Suku Kata',
-      description: 'Pelajari suku kata dasar',
-      count: '150 Soal',
-      badge: 'Dasar',
-      gradient: 'from-blue-500 to-purple-600'
-    },
-    {
-      id: 'awal_kata' as const,
-      emoji: '🔤',
-      title: 'Awal Kata',
-      description: 'Tebak huruf awal dari kata',
-      count: '150 Soal',
-      badge: 'Huruf Awal',
-      gradient: 'from-green-500 to-teal-600'
-    },
-    {
-      id: 'akhir_kata' as const,
-      emoji: '🎯',
-      title: 'Akhir Kata',
-      description: 'Tebak huruf akhir dari kata',
-      count: '150 Soal',
-      badge: 'Huruf Akhir',
-      gradient: 'from-orange-500 to-red-600'
-    },
-    {
-      id: 'tengah_suku_kata' as const,
-      emoji: '🎯',
-      title: 'Kuis Tengah Suku Kata Kata',
-      description: 'Lengkapi suku kata yang hilang di tengah kata',
-      count: '150 Soal',
-      badge: 'Kata Menarik',
-      gradient: 'from-success to-primary'
-    },
-    {
-      id: 'lengkapi_suku_kata' as const,
-      emoji: '🔄',
-      title: 'Lengkapi Suku Kata Belakang',
-      description: 'Lengkapi bagian depan kata dengan suku kata yang tepat',
-      count: '150 Soal',
-      badge: 'Kata Sehari-hari',
-      gradient: 'from-warning to-secondary'
-    },
-    {
-      id: 'lengkapi_suku_kata_belakang' as const,
-      emoji: '✏️',
-      title: 'Lengkapi Suku Kata Depan',
-      description: 'Lengkapi kata dengan suku kata yang tepat',
-      count: '150 Soal',
-      badge: 'Kata Sehari-hari',
-      gradient: 'from-info to-primary'
-    },
-    {
-      id: 'mengenal_suku_kata' as const,
-      emoji: '🎡',
-      title: 'Mengenal Suku Kata',
-      description: 'Pelajari suku kata dengan memilih konsonan dan vokal',
-      count: '21 Konsonan + 5 Vokal',
-      badge: 'Interaktif',
-      gradient: 'from-pink-500 to-purple-600'
-    }
-  ];
+  // Auto-generated from registry - no need to manually maintain this list
+  const quizTypes = getAllQuizMetadata();
   const getTotalStars = () => {
     return sessionHistory.reduce((total, session) => total + (session.stars || 0), 0);
   };

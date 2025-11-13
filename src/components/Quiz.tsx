@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Volume2 } from "lucide-react";
 import { Question, Settings, AppState, WrongAnswer } from "@/types/quiz";
-import { generateQuizQuestions } from "@/features/quiz";
+import { generateQuizQuestions, QuizId } from "@/features/quiz";
 import { speak } from "@/utils/tts";
 import { safeSet } from "@/utils/storage";
 import QuizLayout from "@/components/design/QuizLayout";
@@ -13,7 +13,7 @@ import QuizCard from "@/components/design/QuizCard";
 import QuizOption from "@/components/design/QuizOption";
 
 interface QuizProps {
-  quizType: 'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_suku_kata' | 'lengkapi_suku_kata' | 'lengkapi_suku_kata_belakang' | 'mengenal_suku_kata';
+  quizType: QuizId;
   settings: Settings;
   appState: AppState;
   setAppState: React.Dispatch<React.SetStateAction<AppState>>;

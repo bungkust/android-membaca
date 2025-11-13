@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SessionHistory } from "@/types/quiz";
 import { ArrowLeft, Star, ChevronDown, ChevronUp, XCircle } from "lucide-react";
+import { getQuizDefinition } from "@/features/quiz";
 
 interface HistoryProps {
   sessionHistory: SessionHistory[];
@@ -29,14 +30,11 @@ const History = ({ sessionHistory, onBack, onClearHistory, onQuizSelection }: Hi
   };
 
   const getQuizTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      'suku_kata': '📚 Suku Kata',
-      'awal_kata': '🔤 Awal Kata',
-      'akhir_kata': '🎯 Akhir Kata',
-      'tengah_suku_kata': '🎯 Tengah Suku Kata Kata',
-      'lengkapi_suku_kata': '✏️ Lengkapi Suku Kata'
-    };
-    return labels[type] || type;
+    const quiz = getQuizDefinition(type);
+    if (quiz) {
+      return `${quiz.metadata.emoji} ${quiz.metadata.title}`;
+    }
+    return type;
   };
 
   const filterSessions = () => {

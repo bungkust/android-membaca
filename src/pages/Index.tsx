@@ -11,12 +11,13 @@ import History from "@/components/History";
 import MengenalSukuKata from "@/components/MengenalSukuKata";
 import { Settings as SettingsType, AppState, SessionHistory } from "@/types/quiz";
 import { safeParse, safeSet } from "@/utils/storage";
+import { QuizId, getQuizDefinition } from "@/features/quiz";
 
 const Index = () => {
   const [screen, setScreen] = useState<'AUDIO_PERMISSION' | 'ONBOARDING' | 'HOME' | 'QUIZ_SELECTION' | 'QUIZ' | 'MENGENAL_SUKU_KATA' | 'RESULTS' | 'SETTINGS' | 'HISTORY' | 'INSTALL'>('AUDIO_PERMISSION');
   const [audioPermissionGranted, setAudioPermissionGranted] = useState(false);
   const [onboardingSeen, setOnboardingSeen] = useState(false);
-  const [selectedQuizType, setSelectedQuizType] = useState<'suku_kata' | 'awal_kata' | 'akhir_kata' | 'tengah_suku_kata' | 'lengkapi_suku_kata' | 'lengkapi_suku_kata_belakang' | 'mengenal_suku_kata'>('suku_kata');
+  const [selectedQuizType, setSelectedQuizType] = useState<QuizId>('suku_kata');
   
   const [settings, setSettings] = useState<SettingsType>({
     questionsPerSession: 10,
@@ -90,10 +91,11 @@ const Index = () => {
     setScreen('HOME');
   };
 
-  const handleQuizTypeSelect = (type: typeof selectedQuizType) => {
+  const handleQuizTypeSelect = (type: QuizId) => {
     setSelectedQuizType(type);
-    if (type === 'mengenal_suku_kata') {
-      setScreen('MENGENAL_SUKU_KATA');
+    const quiz = getQuizDefinition(type);
+    if (quiz?.metadata.isSpecial && quiz.metadata.routeTo) {
+      setScreen(quiz.metadata.routeTo as any);
     } else {
       setScreen('QUIZ');
     }

@@ -1,19 +1,23 @@
 import { Question } from "@/types/quiz";
-import * as Legacy from "@/utils/quizData";
+import { QUIZ_REGISTRY, getQuizDefinition, getAllQuizMetadata, QuizId } from './registry';
 
+/**
+ * Backward compatible function - generates questions for a quiz type
+ * @deprecated Use getQuizDefinition(quizType).generateQuestions() for better type safety
+ */
 export function generateQuizQuestions(
   quizType: string,
   count: number,
   seenIds: Set<string>
 ): Question[] {
-  // Delegate to legacy implementation to preserve behavior.
-  return Legacy.generateQuizQuestions(quizType, count, seenIds);
+  const quiz = getQuizDefinition(quizType);
+  if (!quiz || !quiz.generateQuestions) {
+    console.warn(`Quiz type "${quizType}" not found or does not generate questions`);
+    return [];
+  }
+  return quiz.generateQuestions(count, seenIds);
 }
 
-export { generateQuestions as generateSukuKata } from "./sukuKata";
-export { generateQuestions as generateAwalKata } from "./awalKata";
-export { generateQuestions as generateAkhirKata } from "./akhirKata";
-export { generateQuestions as generateTengahSukuKata } from "./tengahSukuKata";
-export { generateQuestions as generateLengkapiSukuKata } from "./lengkapiSukuKata";
-export { generateQuestions as generateLengkapiSukuKataBelakang } from "./lengkapiSukuKataBelakang";
-
+// Export registry functions for UI components
+export { getAllQuizMetadata, getQuizDefinition, QUIZ_REGISTRY };
+export type { QuizId };

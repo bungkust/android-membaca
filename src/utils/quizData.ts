@@ -1,3 +1,18 @@
+/**
+ * @deprecated This file is kept for backward compatibility only.
+ * 
+ * All quiz data and generators have been migrated to the modular structure in:
+ * - src/features/quiz/[quizType]/ (e.g., sukuKata/, awalKata/, etc.)
+ * 
+ * New code should use the registry system:
+ * - import { getQuizDefinition, getAllQuizMetadata } from '@/features/quiz'
+ * 
+ * This file will be removed in a future version.
+ * 
+ * Migration status: All quiz types have been migrated to the new structure.
+ * The generateQuizQuestions function here is still used by the legacy wrapper
+ * in src/features/quiz/index.ts for backward compatibility.
+ */
 import { Question } from "@/types/quiz";
 
 const shuffleArray = <T,>(array: T[]): T[] => {

@@ -1,9 +1,7 @@
-name: Build Mobile
+name: Android Build
 
 on:
   workflow_dispatch:
-  tags:
-    - 'v*'
 
 jobs:
   build:
@@ -38,8 +36,9 @@ jobs:
 
       - name: Create build summary
         run: |
-          echo "## Mobile Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Android APK Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- Platform: Android" >> $GITHUB_STEP_SUMMARY
-          echo "- Build triggered via EAS" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Profile: preview" >> $GITHUB_STEP_SUMMARY
+          echo "- Build triggered manually via EAS" >> $GITHUB_STEP_SUMMARY
 

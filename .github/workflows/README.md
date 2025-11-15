@@ -29,13 +29,13 @@ This repository has 3 GitHub Actions workflows configured:
 
 **Note:** For automatic Netlify deployment, you can add Netlify deployment step using `netlify/action` with `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
 
-## 3. Build Mobile Workflow (`build-mobile.yml`)
+## 3. Android Build Workflow (`build-android-apk.yml`)
 **Trigger:**
-- Manual trigger via `workflow_dispatch`
-- Tags starting with `v*` (e.g., `v1.0.0`)
+- Manual trigger via `workflow_dispatch` only
 
 **What it does:**
 - Builds Android APK using Expo EAS Build
+- Uses preview profile for APK generation
 - Requires EAS authentication
 
 **Status:** ⚠️ Requires setup
@@ -80,12 +80,12 @@ To automatically deploy to Netlify on web build:
 |----------|--------|------------------|----------------|
 | CI | ✅ Ready | None | Yes (push/PR) |
 | Build Web | ✅ Ready | None | Yes (push to main) |
-| Build Mobile | ⚠️ Needs EXPO_TOKEN | EXPO_TOKEN | Manual/Tags |
+| Android Build | ⚠️ Needs EXPO_TOKEN | EXPO_TOKEN | Manual only |
 
 ## Testing Workflows
 
 To test workflows:
 1. Push code to trigger CI
 2. Push to `main` to trigger web build
-3. Go to Actions tab → Run workflow → Select "Build Mobile" for mobile build
+3. Go to Actions tab → Run workflow → Select "Android Build" for mobile build
 

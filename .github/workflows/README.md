@@ -70,8 +70,9 @@ Before running the workflow for the first time, you need to setup Android creden
 2. **Option 2: Via EAS CLI (Local)**
    ```bash
    cd packages/mobile
-   eas credentials --platform android --profile preview
+   eas credentials --platform android
    ```
+   - When prompted, select "preview" profile
    - Choose to generate a new keystore when prompted
    - Follow the interactive prompts
 

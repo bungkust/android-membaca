@@ -25,3 +25,36 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
+
+# Monorepo build outputs
+packages/*/dist
+packages/*/node_modules
+packages/*/build
+
+# Turborepo
+.turbo
+turbo.json.local
+
+# Expo
+.expo
+.expo-shared
+*.apk
+*.aab
+.eas
+
+# Android signing
+*.jks
+*.keystore
+android/app/release/
+
+# Lock files (keep only pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+bun.lockb
+**/package-lock.json
+**/yarn.lock
+**/bun.lockb
+
+# Root build outputs (monorepo outputs should be in packages/*/dist)
+/dist
+/build

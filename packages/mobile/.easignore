@@ -1,0 +1,42 @@
+# EAS ignore file
+# Files and directories to exclude from EAS build
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+.expo/
+dist/
+build/
+*.apk
+*.aab
+
+# Development files
+.env*.local
+*.log
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Test files
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# TypeScript build info
+*.tsbuildinfo
+

@@ -67,27 +67,76 @@ Detail spesifikasi token (font, warna HSL, gradient, radius, shadow, motion, lay
 
 ### Developer Setup
 
-1. Install dependencies
+This is a monorepo using pnpm workspaces and Turborepo for build orchestration.
+
+1. Install pnpm (if not already installed)
 
 ```
-npm install
+npm install -g pnpm
 ```
 
-2. Run dev server
+2. Install dependencies
 
 ```
-npm run dev
+pnpm install
 ```
 
-3. Build
+3. Run development servers
+
+```bash
+# Run all packages in development mode
+pnpm dev
+
+# Run web only
+pnpm dev:web
+
+# Run mobile only  
+pnpm dev:mobile
+```
+
+4. Build
+
+```bash
+# Build all packages
+pnpm build
+
+# Build web only
+pnpm build:web
+
+# Build mobile only
+pnpm build:mobile
+```
+
+5. Other commands
+
+```bash
+# Lint all packages
+pnpm lint
+
+# Type check all packages
+pnpm typecheck
+
+# Format code
+pnpm format
+
+# Clean build outputs
+pnpm clean
+```
+
+## 📦 Monorepo Structure
 
 ```
-npm run build
+packages/
+├── core/          # Shared business logic (quiz features, types, utils)
+├── storage/       # Storage abstraction (localStorage / AsyncStorage)
+├── tts/           # TTS abstraction (Web Speech API / expo-speech)
+├── web/           # Web app (Vite + React Router)
+└── mobile/        # Mobile app (Expo + Expo Router)
 ```
 
 ### Menambah Jenis Kuis Baru (Acuan "Awal Kata")
 
-1. Buat generator soal di `src/features/quiz/<jenis>.ts` dan ekspor via `src/features/quiz/index.ts`.
+1. Buat generator soal di `packages/core/src/features/quiz/<jenis>/` dan ekspor via `packages/core/src/features/quiz/registry.ts`.
 2. Gunakan komponen desain di halaman kuis:
 
 ```
@@ -110,12 +159,29 @@ Lihat `DESIGN_SYSTEM.md` untuk aturan styling dan state interaksi yang wajib dii
 
 ## 🛠️ Technology Stack
 
+### Monorepo Tools
+- **pnpm workspaces** - Package management
+- **Turborepo** - Build orchestration and caching
+
+### Shared Packages
+- **@repo/core** - Business logic (quiz features, types, utils)
+- **@repo/storage** - Storage abstraction (localStorage / AsyncStorage)
+- **@repo/tts** - TTS abstraction (Web Speech API / expo-speech)
+
+### Web Package
 - React 18
 - TypeScript
 - Tailwind CSS
 - Vite
-- shadcn/ui components
-- Web Speech API for TTS
+- shadcn/ui components (Radix UI)
+- React Router DOM
+
+### Mobile Package
+- React Native
+- Expo SDK 54
+- Expo Router
+- React Native Paper
+- expo-speech
 
 ## 📱 Screens
 

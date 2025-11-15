@@ -1,0 +1,31 @@
+{
+  "name": "@repo/tts",
+  "version": "1.5.9",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "dev": "tsc --build --watch"
+  },
+  "dependencies": {
+    "expo-speech": "~12.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "expo-speech": "~12.0.0"
+  }
+}
+

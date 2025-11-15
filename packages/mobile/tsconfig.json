@@ -1,0 +1,33 @@
+{
+  "extends": "../../tools/shared/tsconfig.base.json",
+  "compilerOptions": {
+    "strict": false,
+    "jsx": "react-native",
+    "lib": ["ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@repo/core/*": ["../core/src/*"],
+      "@repo/storage/*": ["../storage/src/*"],
+      "@repo/tts/*": ["../tts/src/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../storage" },
+    { "path": "../tts" }
+  ]
+}

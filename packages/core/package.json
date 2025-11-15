@@ -1,0 +1,58 @@
+{
+  "name": "@repo/core",
+  "version": "1.5.9",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./features/quiz": {
+      "import": "./dist/features/quiz/index.js",
+      "types": "./dist/features/quiz/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types/quiz.js",
+      "types": "./dist/types/quiz.d.ts"
+    },
+    "./types/quiz": {
+      "import": "./dist/types/quiz.js",
+      "types": "./dist/types/quiz.d.ts"
+    },
+    "./types/app": {
+      "import": "./dist/types/app.js",
+      "types": "./dist/types/app.d.ts"
+    },
+    "./utils/logger": {
+      "import": "./dist/utils/logger.js",
+      "types": "./dist/utils/logger.d.ts"
+    },
+    "./utils/env": {
+      "import": "./dist/utils/env.js",
+      "types": "./dist/utils/env.d.ts"
+    },
+    "./utils/version": {
+      "import": "./dist/utils/version.js",
+      "types": "./dist/utils/version.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "dev": "tsc --build --watch"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.23",
+    "typescript": "^5.8.3"
+  }
+}
+

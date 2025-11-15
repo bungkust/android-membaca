@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Belajar Membaca",
-    "slug": "kuis-belajar-membaca",
+    "slug": "belajar-membaca",
     "version": "1.5.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

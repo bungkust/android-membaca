@@ -43,9 +43,20 @@ This repository has 3 GitHub Actions workflows configured:
 - `EXPO_TOKEN` - Your Expo access token
 
 **How to get EXPO_TOKEN:**
-1. Install EAS CLI: `npm install -g eas-cli`
-2. Login: `eas login`
-3. Get token: `eas whoami` or create token at https://expo.dev/accounts/[account]/settings/access-tokens
+1. Install EAS CLI locally: `npm install -g eas-cli`
+2. Login to Expo: `eas login`
+3. Create access token:
+   - **Option 1:** Go to https://expo.dev/accounts/[your-account]/settings/access-tokens
+   - **Option 2:** Run `eas whoami` to see your account info, then create token via Expo dashboard
+4. Copy the token (it looks like: `exp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
+5. Add it to GitHub Secrets:
+   - Go to your repository → Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `EXPO_TOKEN`
+   - Value: Paste your Expo access token
+   - Click "Add secret"
+
+**Important:** The token must have build permissions. If using Expo organization, ensure the token has access to the project.
 
 ## Setup Instructions
 

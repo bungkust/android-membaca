@@ -25,6 +25,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set. Please add it in Repository Settings > Secrets and variables > Actions"
+            echo "Learn more: https://docs.expo.dev/accounts/programmatic-access/"
+            exit 1
+          fi
+          echo "✓ EXPO_TOKEN is configured"
+
       - name: Setup EAS CLI
         run: npm install -g eas-cli
 
@@ -33,6 +42,7 @@ jobs:
         run: eas build --platform android --non-interactive --profile preview
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        continue-on-error: false
 
       - name: Create build summary
         run: |

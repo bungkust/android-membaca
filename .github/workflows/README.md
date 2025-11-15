@@ -58,6 +58,25 @@ This repository has 3 GitHub Actions workflows configured:
 
 **Important:** The token must have build permissions. If using Expo organization, ensure the token has access to the project.
 
+**Setup Android Credentials (Required before first build):**
+Before running the workflow for the first time, you need to setup Android credentials manually:
+
+1. **Option 1: Via EAS Dashboard (Recommended)**
+   - Go to https://expo.dev/accounts/[your-account]/projects/belajar-membaca/credentials
+   - Click "Generate new credentials" for Android
+   - Select "preview" profile
+   - EAS will automatically generate a keystore
+
+2. **Option 2: Via EAS CLI (Local)**
+   ```bash
+   cd packages/mobile
+   eas credentials --platform android --profile preview
+   ```
+   - Choose to generate a new keystore when prompted
+   - Follow the interactive prompts
+
+**Note:** Once credentials are created, subsequent builds will work automatically. The first build always requires manual credential setup.
+
 ## Setup Instructions
 
 ### 1. Generate pnpm-lock.yaml (Required)

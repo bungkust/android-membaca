@@ -42,6 +42,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Clean node_modules and lockfiles
+        run: |
+          rm -rf node_modules
+          rm -f pnpm-lock.yaml yarn.lock package-lock.json
+
+      - name: Re-install dependencies with hoisting (CI-safe)
+        run: pnpm install --no-frozen-lockfile --shamefully-hoist
+
+      - name: Gradle clean
+        working-directory: packages/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew clean
+
       - name: Get version info
         id: version
         working-directory: packages/mobile

@@ -25,6 +25,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Clean node_modules and lockfiles
+        run: |
+          rm -rf node_modules
+          rm -f pnpm-lock.yaml yarn.lock package-lock.json
+
+      - name: Re-install dependencies with hoisting (CI-safe)
+        run: pnpm install --no-frozen-lockfile --shamefully-hoist
+
       - name: Verify EXPO_TOKEN
         run: |
           if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then

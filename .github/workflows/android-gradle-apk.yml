@@ -39,9 +39,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
       - name: Clean node_modules and lockfiles
         run: |
           rm -rf node_modules
@@ -49,12 +46,6 @@ jobs:
 
       - name: Re-install dependencies with hoisting (CI-safe)
         run: pnpm install --no-frozen-lockfile --shamefully-hoist
-
-      - name: Gradle clean
-        working-directory: packages/mobile/android
-        run: |
-          chmod +x gradlew
-          ./gradlew clean
 
       - name: Get version info
         id: version
@@ -79,6 +70,20 @@ jobs:
           NODE_ENV: production
         run: |
           pnpm dlx expo prebuild --platform android --clean
+
+      - name: Ensure android project exists
+        run: |
+          if [ ! -d "packages/mobile/android" ]; then
+            echo "ERROR: expected packages/mobile/android to exist after expo prebuild"
+            ls -la packages/mobile
+            exit 1
+          fi
+
+      - name: Gradle clean
+        working-directory: packages/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew clean
 
       - name: Ensure assets directory exists
         working-directory: packages/mobile

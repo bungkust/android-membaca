@@ -130,9 +130,9 @@ jobs:
               -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
               -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
               -Pandroid.injected.signing.key.password="$ANDROID_KEY_ALIAS_PASSWORD" \
-              --info
+              --info --stacktrace
           else
-            ./gradlew assembleDebug --info
+            ./gradlew assembleDebug --info --stacktrace
           fi
 
       - name: Rename APK with timestamp

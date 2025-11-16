@@ -61,7 +61,7 @@ jobs:
           echo "Version: $VERSION"
           echo "APK Name: belajar-membaca-v${VERSION}-${{ inputs.buildType }}-${BUILD_DATE}-${BUILD_TIME}"
 
-      - name: Prebuild Android
+      - name: Prebuild Android (fixed)
         working-directory: packages/mobile
         env:
           EXPO_NO_NEW_ARCH: 1
@@ -69,12 +69,21 @@ jobs:
           RCT_NEW_ARCH_ENABLED: 0
           NODE_ENV: production
         run: |
+          # Debug: show expo CLI version and help
+          pnpm dlx expo --version || true
+          pnpm dlx expo prebuild --help | sed -n '1,120p' || true
           # Retry prebuild up to 3 times to avoid transient failures
           for i in 1 2 3; do
-            pnpm dlx expo prebuild --platform android --clean --force && break
+            pnpm dlx expo prebuild --platform android --clean && break
             echo "expo prebuild failed, retrying in 5s ($i/3)..."
             sleep 5
           done
+          # Fail early if android folder not created
+          if [ ! -d android ]; then
+            echo "ERROR: expo prebuild did not create android/ — aborting"
+            ls -la || true
+            exit 1
+          fi
 
       - name: Show expo config (debug)
         working-directory: packages/mobile

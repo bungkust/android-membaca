@@ -61,6 +61,11 @@ jobs:
           echo "Version: $VERSION"
           echo "APK Name: belajar-membaca-v${VERSION}-${{ inputs.buildType }}-${BUILD_DATE}-${BUILD_TIME}"
 
+      - name: Install mobile package deps (CI-safe)
+        working-directory: packages/mobile
+        run: |
+          pnpm install --no-frozen-lockfile --shamefully-hoist --filter ./packages/mobile...
+
       - name: Prebuild Android (fixed)
         working-directory: packages/mobile
         env:

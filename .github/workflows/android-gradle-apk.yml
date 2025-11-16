@@ -69,7 +69,27 @@ jobs:
           RCT_NEW_ARCH_ENABLED: 0
           NODE_ENV: production
         run: |
-          pnpm dlx expo prebuild --platform android --clean
+          # Retry prebuild up to 3 times to avoid transient failures
+          for i in 1 2 3; do
+            pnpm dlx expo prebuild --platform android --clean --force && break
+            echo "expo prebuild failed, retrying in 5s ($i/3)..."
+            sleep 5
+          done
+
+      - name: Show expo config (debug)
+        working-directory: packages/mobile
+        run: |
+          node -e "console.log(require('./app.json'))"
+          pnpm dlx expo config --json || true
+
+      - name: Inspect node_modules layout (debug)
+        run: |
+          ls -la node_modules | sed -n '1,200p' || true
+          ls -la node_modules/.pnpm | sed -n '1,200p' || true
+          ls -la packages/mobile/node_modules | sed -n '1,200p' || true
+          ls -la packages/mobile/node_modules/.pnpm | sed -n '1,200p' || true
+          test -d packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin && echo "expo-modules-core kotlin sources present" || echo "expo-modules-core kotlin sources MISSING"
+          test -d packages/mobile/node_modules/react-native-safe-area-context/android/src/main/java && echo "safe-area-context java sources present" || echo "safe-area-context java sources MISSING"
 
       - name: Ensure android project exists
         run: |

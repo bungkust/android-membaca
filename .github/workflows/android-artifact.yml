@@ -43,6 +43,9 @@ jobs:
           eas build --platform android --non-interactive --profile preview --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_NO_NEW_ARCH: "1"
+          EXPO_USE_NEW_ARCH: "0"
+          RCT_NEW_ARCH_ENABLED: "0"
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq

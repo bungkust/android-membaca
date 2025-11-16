@@ -64,7 +64,7 @@ Before running the workflow for the first time, you need to setup Android creden
 1. **Option 1: Via EAS Dashboard (Recommended)**
    - Go to https://expo.dev/accounts/[your-account]/projects/belajar-membaca/credentials
    - Click "Generate new credentials" for Android
-   - Select "preview" profile
+   - Select "preview" profile (or use default credentials)
    - EAS will automatically generate a keystore
 
 2. **Option 2: Via EAS CLI (Local)**
@@ -72,11 +72,18 @@ Before running the workflow for the first time, you need to setup Android creden
    cd packages/mobile
    eas credentials --platform android
    ```
-   - When prompted, select "preview" profile
-   - Choose to generate a new keystore when prompted
-   - Follow the interactive prompts
+   - When prompted, select the profile you want to use ("preview", "dev", etc.)
+   - Choose "Set up a new keystore" → "Generate a new Android Keystore"
+   - Assign a name to your build credentials (e.g., "preview" or "dev")
+   - Set it as default build credentials (recommended)
+   - EAS will create the keystore automatically
 
-**Note:** Once credentials are created, subsequent builds will work automatically. The first build always requires manual credential setup.
+**Application Identifier:** `com.belajarmembaca.app`
+
+**Note:** 
+- Default credentials will be used for all profiles (preview, production, etc.) unless profile-specific credentials are created
+- Once credentials are created, subsequent builds will work automatically in GitHub Actions
+- The first build always requires manual credential setup via EAS Dashboard or CLI
 
 ## Setup Instructions
 

@@ -1,0 +1,83 @@
+name: Android Artifact
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_and_attach_artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set. Please add it in Repository Settings > Secrets and variables > Actions"
+            echo "Learn more: https://docs.expo.dev/accounts/programmatic-access/"
+            exit 1
+          fi
+          echo "✓ EXPO_TOKEN is configured"
+
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build Android APK on EAS (wait)
+        working-directory: packages/mobile
+        run: |
+          eas build --platform android --non-interactive --profile preview --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Download latest Android APK from EAS
+        working-directory: packages/mobile
+        run: |
+          BUILD_INFO_JSON="$(eas build:list --platform android --profile preview --limit 1 --json)"
+          echo "$BUILD_INFO_JSON" | jq .
+          BUILD_ID="$(echo "$BUILD_INFO_JSON" | jq -r '.[0].id')"
+          echo "Latest build id: $BUILD_ID"
+          # Prefer direct download via CLI if supported
+          if eas build:download --id "$BUILD_ID" --output ./app.apk; then
+            echo "Downloaded APK via eas build:download"
+          else
+            BUILD_URL="$(echo "$BUILD_INFO_JSON" | jq -r '.[0].artifacts.buildUrl')"
+            echo "Falling back to curl from $BUILD_URL"
+            curl -L "$BUILD_URL" -o ./app.apk
+          fi
+          ls -lh ./app.apk
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Upload APK artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-${{ github.sha }}
+          path: packages/mobile/app.apk
+          retention-days: 30
+
+      - name: Create build summary
+        run: |
+          echo "## Android Artifact Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- APK Artifact: android-apk-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Profile: preview" >> $GITHUB_STEP_SUMMARY
+          echo "- Note: Built on EAS, artifact attached in GitHub Actions" >> $GITHUB_STEP_SUMMARY
+

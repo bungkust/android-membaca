@@ -48,16 +48,14 @@ jobs:
       - name: Re-install dependencies with hoisting (CI-safe)
         run: pnpm install --no-frozen-lockfile --shamefully-hoist
 
-      - name: Debug: verify installs and expo-modules-core
+      - name: "Debug: verify installs and expo-modules-core"
         run: |
           node -v; pnpm -v; java -version
           echo "ROOT node_modules/.pnpm listing:"
           ls -la node_modules/.pnpm | sed -n '1,200p' || true
           echo "packages/mobile node_modules listing:"
           ls -la packages/mobile/node_modules | sed -n '1,200p' || true
-          ls -la node_modules/.pnpm | grep expo-modules-core || true
           test -d packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin && echo "expo-modules-core kotlin present in packages/mobile" || echo "expo-modules-core kotlin MISSING in packages/mobile"
-          test -d node_modules/.pnpm/*expo-modules-core*/node_modules/expo-modules-core/android/src/main/kotlin && echo "expo-modules-core kotlin present under root .pnpm" || echo "expo-modules-core kotlin MISSING under root .pnpm"
 
       - name: Get version info
         id: version

@@ -149,6 +149,61 @@ jobs:
           mkdir -p android/app/src/main/assets
           echo "Assets directory ready for bundle"
 
+      - name: Bundle JavaScript for Android
+        working-directory: packages/mobile
+        env:
+          EXPO_NO_NEW_ARCH: 1
+          EXPO_USE_NEW_ARCH: 0
+          RCT_NEW_ARCH_ENABLED: 0
+          NODE_ENV: production
+        run: |
+          echo "Bundling JavaScript for Android..."
+          # Ensure assets directory exists
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/src/main/res
+          
+          # Use react-native bundle (works with Expo projects)
+          echo "Creating JavaScript bundle with react-native bundle..."
+          pnpm exec react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.ts \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res/ \
+            --reset-cache || {
+            echo "react-native bundle failed, trying alternative method..."
+            # Alternative: try using expo export and extract bundle
+            pnpm dlx expo export --platform android --output-dir android-bundle 2>&1 || true
+            # Look for the bundle in various possible locations
+            if [ -f "android-bundle/_expo/static/js/android/index.js" ]; then
+              cp android-bundle/_expo/static/js/android/index.js android/app/src/main/assets/index.android.bundle
+              echo "Bundle copied from expo export output"
+            elif [ -f "android-bundle/index.js" ]; then
+              cp android-bundle/index.js android/app/src/main/assets/index.android.bundle
+              echo "Bundle copied from expo export (alternative location)"
+            else
+              echo "ERROR: Failed to create JavaScript bundle with all methods"
+              echo "Listing android-bundle directory (if exists):"
+              ls -la android-bundle/ 2>/dev/null || echo "android-bundle directory does not exist"
+              exit 1
+            fi
+          }
+          
+          # Verify bundle exists and has content
+          if [ -f "android/app/src/main/assets/index.android.bundle" ]; then
+            BUNDLE_SIZE=$(wc -c < android/app/src/main/assets/index.android.bundle)
+            echo "JavaScript bundle created successfully (size: $BUNDLE_SIZE bytes)"
+            ls -lh android/app/src/main/assets/index.android.bundle
+            if [ "$BUNDLE_SIZE" -lt 100 ]; then
+              echo "WARNING: Bundle file is suspiciously small, might be empty or invalid"
+            fi
+          else
+            echo "ERROR: JavaScript bundle not found at android/app/src/main/assets/index.android.bundle"
+            echo "Listing assets directory:"
+            ls -la android/app/src/main/assets/ || echo "Assets directory does not exist"
+            exit 1
+          fi
+
       - name: Prepare keystore (release only)
         if: ${{ inputs.buildType == 'release' }}
         working-directory: packages/mobile/android
@@ -180,21 +235,46 @@ jobs:
           echo "Using JAVA_HOME: $JAVA_HOME"
           java -version
           chmod +x gradlew
+          
+          # Verify bundle exists before building
+          if [ ! -f "app/src/main/assets/index.android.bundle" ]; then
+            echo "ERROR: JavaScript bundle not found at app/src/main/assets/index.android.bundle"
+            echo "Listing assets directory:"
+            ls -la app/src/main/assets/ || echo "Assets directory does not exist"
+            exit 1
+          fi
+          
+          BUILD_LOG="build.log"
+          BUILD_EXIT_CODE=0
+          
           if [ "${{ inputs.buildType }}" = "release" ]; then
             KEYSTORE_PATH="$(pwd)/app/release.keystore"
             if [ ! -f "$KEYSTORE_PATH" ]; then
               echo "ERROR: Keystore not found at $KEYSTORE_PATH"
               exit 1
             fi
+            echo "Building release APK..."
             ./gradlew assembleRelease \
               -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
               -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
               -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
               -Pandroid.injected.signing.key.password="$ANDROID_KEY_ALIAS_PASSWORD" \
-              --info --stacktrace
+              --info --stacktrace 2>&1 | tee "$BUILD_LOG" || BUILD_EXIT_CODE=$?
           else
-            ./gradlew assembleDebug --info --stacktrace --warning-mode all 2>&1 | tee build.log || (cat build.log && exit 1)
+            echo "Building debug APK..."
+            ./gradlew assembleDebug --info --stacktrace --warning-mode all 2>&1 | tee "$BUILD_LOG" || BUILD_EXIT_CODE=$?
           fi
+          
+          # Check if build failed
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "ERROR: Gradle build failed with exit code $BUILD_EXIT_CODE"
+            echo "Last 100 lines of build log:"
+            tail -100 "$BUILD_LOG" || cat "$BUILD_LOG"
+            echo "Full build log saved to $BUILD_LOG"
+            exit 1
+          fi
+          
+          echo "Gradle build completed successfully"
 
       - name: Verify build output exists
         working-directory: packages/mobile/android
@@ -209,11 +289,19 @@ jobs:
               if [ -d app/build/outputs ]; then
                 echo "Listing app/build/outputs:"
                 ls -la app/build/outputs/ || true
+                echo "Listing app/build/outputs/apk:"
+                ls -la app/build/outputs/apk/ 2>/dev/null || echo "apk directory does not exist"
+                if [ -d app/build/outputs/apk ]; then
+                  echo "Listing app/build/outputs/apk/${{ inputs.buildType }}:"
+                  ls -la app/build/outputs/apk/${{ inputs.buildType }}/ 2>/dev/null || echo "${{ inputs.buildType }} directory does not exist"
+                fi
               fi
             fi
           fi
           echo "Searching for any APK files in app directory:"
           find app -name "*.apk" -type f 2>/dev/null | head -10 || echo "No APK files found in app directory"
+          echo "Searching for any APK files in entire android directory:"
+          find . -name "*.apk" -type f 2>/dev/null | head -10 || echo "No APK files found in android directory"
 
       - name: Find and rename APK with timestamp
         working-directory: packages/mobile/android

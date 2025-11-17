@@ -149,6 +149,28 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure Kotlin version compatibility
+        working-directory: packages/mobile/android
+        run: |
+          GRADLE_FILE="build.gradle"
+          if [ -f "$GRADLE_FILE" ]; then
+            if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
+              echo "Kotlin version not explicitly set, checking if needed..."
+              # Check if kotlin is referenced in buildscript
+              if grep -q "kotlin" "$GRADLE_FILE"; then
+                echo "Kotlin detected but version not set - this may cause compilation issues"
+                echo "Consider setting ext.kotlinVersion in build.gradle if compilation fails"
+              else
+                echo "No Kotlin references found in build.gradle"
+              fi
+            else
+              echo "ext.kotlinVersion already set in build.gradle"
+              grep "ext.kotlinVersion" "$GRADLE_FILE" || true
+            fi
+          else
+            echo "Warning: build.gradle not found at $GRADLE_FILE"
+          fi
+
       - name: Gradle clean
         working-directory: packages/mobile/android
         env:

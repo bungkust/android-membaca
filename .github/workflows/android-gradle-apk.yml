@@ -67,10 +67,25 @@ jobs:
         run: |
           # Install workspace at repo root so pnpm can hoist native deps correctly
           pnpm -v
-          # Use frozen-lockfile if lockfile exists, otherwise use shamefully-hoist for deterministic installs
+          # Try frozen-lockfile first, fall back to regular install if lockfile is outdated
           if [ -f "pnpm-lock.yaml" ]; then
-            pnpm install --frozen-lockfile --shamefully-hoist
+            echo "pnpm-lock.yaml found, attempting install with --frozen-lockfile..."
+            if pnpm install --frozen-lockfile --shamefully-hoist 2>&1 | tee install.log; then
+              echo "✅ Install succeeded with frozen lockfile"
+            else
+              EXIT_CODE=${PIPESTATUS[0]}
+              if grep -q "ERR_PNPM_OUTDATED_LOCKFILE\|outdated.*lockfile" install.log; then
+                echo "⚠️ Lockfile is outdated, updating lockfile and installing..."
+                pnpm install --shamefully-hoist
+                echo "✅ Install succeeded after updating lockfile"
+              else
+                echo "❌ Install failed with unknown error"
+                cat install.log
+                exit $EXIT_CODE
+              fi
+            fi
           else
+            echo "pnpm-lock.yaml not found, installing without lockfile..."
             pnpm install --shamefully-hoist
           fi
 
@@ -78,7 +93,18 @@ jobs:
         run: |
           # Install all workspace packages explicitly
           if [ -f "pnpm-lock.yaml" ]; then
-            pnpm install --frozen-lockfile --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts"
+            if pnpm install --frozen-lockfile --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts" 2>&1 | tee install-ws.log; then
+              echo "✅ Workspace packages installed with frozen lockfile"
+            else
+              if grep -q "ERR_PNPM_OUTDATED_LOCKFILE\|outdated.*lockfile" install-ws.log; then
+                echo "⚠️ Lockfile outdated, installing workspace packages without frozen lockfile..."
+                pnpm install --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts"
+              else
+                echo "❌ Workspace package install failed"
+                cat install-ws.log
+                exit 1
+              fi
+            fi
           else
             pnpm install --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts"
           fi
@@ -138,7 +164,18 @@ jobs:
         run: |
           # Install only mobile package dependencies in workspace root so pnpm filter works correctly
           if [ -f "pnpm-lock.yaml" ]; then
-            pnpm install --frozen-lockfile --shamefully-hoist --filter ./packages/mobile...
+            if pnpm install --frozen-lockfile --shamefully-hoist --filter ./packages/mobile... 2>&1 | tee install-mobile.log; then
+              echo "✅ Mobile package installed with frozen lockfile"
+            else
+              if grep -q "ERR_PNPM_OUTDATED_LOCKFILE\|outdated.*lockfile" install-mobile.log; then
+                echo "⚠️ Lockfile outdated, installing mobile package without frozen lockfile..."
+                pnpm install --shamefully-hoist --filter ./packages/mobile...
+              else
+                echo "❌ Mobile package install failed"
+                cat install-mobile.log
+                exit 1
+              fi
+            fi
           else
             pnpm install --shamefully-hoist --filter ./packages/mobile...
           fi
@@ -188,7 +225,18 @@ jobs:
           if [ ! -d "$EXPO_MOD_PATH" ] || ! find "$EXPO_MOD_PATH/android" -name "*.kt" -print -quit >/dev/null 2>&1; then
             echo "expo-modules-core kotlin sources missing or package missing; reinstalling expo-modules-core@3.0.25..."
             if [ -f "pnpm-lock.yaml" ]; then
-              pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --frozen-lockfile --shamefully-hoist
+              if pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --frozen-lockfile --shamefully-hoist 2>&1 | tee add-expo-core.log; then
+                echo "✅ expo-modules-core added with frozen lockfile"
+              else
+                if grep -q "ERR_PNPM_OUTDATED_LOCKFILE\|outdated.*lockfile" add-expo-core.log; then
+                  echo "⚠️ Lockfile outdated, adding expo-modules-core without frozen lockfile..."
+                  pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --shamefully-hoist
+                else
+                  echo "❌ Failed to add expo-modules-core"
+                  cat add-expo-core.log
+                  exit 1
+                fi
+              fi
             else
               pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --shamefully-hoist
             fi

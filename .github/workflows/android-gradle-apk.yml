@@ -195,91 +195,74 @@ jobs:
           else
             ./gradlew assembleDebug --info --stacktrace --warning-mode all 2>&1 | tee build.log || (cat build.log && exit 1)
           fi
-          
-          # Verify build succeeded
-          echo "Verifying build output..."
-          if [ "${{ inputs.buildType }}" = "release" ]; then
-            if [ ! -d "app/build/outputs/apk/release" ]; then
-              echo "ERROR: Release build output directory not found!"
-              echo "Checking build directory structure:"
-              find app/build -type d 2>/dev/null | head -20 || true
-              exit 1
-            fi
-          else
-            if [ ! -d "app/build/outputs/apk/debug" ]; then
-              echo "ERROR: Debug build output directory not found!"
-              echo "Checking build directory structure:"
-              find app/build -type d 2>/dev/null | head -20 || true
-              echo "Checking if build directory exists:"
-              ls -la app/build 2>/dev/null || echo "app/build does not exist"
-              exit 1
-            fi
-          fi
-          
-          echo "Build output directory exists. Listing contents:"
-          ls -la app/build/outputs/apk/${{ inputs.buildType }}/ || true
 
-      - name: Verify build outputs exist
+      - name: Verify build output exists
         working-directory: packages/mobile/android
         run: |
-          echo "Checking build directory structure..."
+          echo "Checking build output directories..."
           echo "Current directory: $(pwd)"
-          echo "Build type: ${{ inputs.buildType }}"
-          echo ""
-          echo "Checking if app/build exists:"
-          ls -la app/ 2>/dev/null || echo "app/ directory not found"
-          echo ""
-          echo "Checking if app/build exists:"
-          ls -la app/build 2>/dev/null || echo "app/build directory not found"
-          echo ""
-          echo "Searching for any APK files in entire android directory:"
-          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
-          echo ""
-          echo "Checking app/build structure:"
-          find app/build -type d 2>/dev/null | head -30 || echo "app/build structure not found"
-          echo ""
-          echo "Checking app/build/outputs if it exists:"
-          ls -la app/build/outputs 2>/dev/null || echo "app/build/outputs does not exist"
+          echo "App directory exists: $([ -d app ] && echo 'YES' || echo 'NO')"
+          if [ -d app ]; then
+            echo "App build directory exists: $([ -d app/build ] && echo 'YES' || echo 'NO')"
+            if [ -d app/build ]; then
+              echo "App build outputs exists: $([ -d app/build/outputs ] && echo 'YES' || echo 'NO')"
+              if [ -d app/build/outputs ]; then
+                echo "Listing app/build/outputs:"
+                ls -la app/build/outputs/ || true
+              fi
+            fi
+          fi
+          echo "Searching for any APK files in app directory:"
+          find app -name "*.apk" -type f 2>/dev/null | head -10 || echo "No APK files found in app directory"
 
       - name: Find and rename APK with timestamp
         working-directory: packages/mobile/android
         run: |
           echo "Searching for APK files..."
-          
-          # Try multiple possible locations
           APK_SOURCE=""
           
+          # Try standard locations first
           if [ "${{ inputs.buildType }}" = "release" ]; then
-            # Try standard locations
-            [ -f "app/build/outputs/apk/release/app-release.apk" ] && APK_SOURCE="app/build/outputs/apk/release/app-release.apk"
-            [ -z "$APK_SOURCE" ] && APK_SOURCE=$(find app/build/outputs/apk/release -name "*.apk" -type f 2>/dev/null | head -1)
-            [ -z "$APK_SOURCE" ] && APK_SOURCE=$(find app/build/outputs -name "*release*.apk" -type f 2>/dev/null | head -1)
-            [ -z "$APK_SOURCE" ] && APK_SOURCE=$(find app/build -name "*release*.apk" -type f 2>/dev/null | head -1)
+            if [ -d "app/build/outputs/apk/release" ]; then
+              APK_SOURCE=$(find app/build/outputs/apk/release -name "*.apk" -type f 2>/dev/null | head -1)
+            fi
+            if [ -z "$APK_SOURCE" ] && [ -d "app/build/outputs" ]; then
+              APK_SOURCE=$(find app/build/outputs -name "*release*.apk" -type f 2>/dev/null | head -1)
+            fi
           else
-            # Try standard locations
-            [ -f "app/build/outputs/apk/debug/app-debug.apk" ] && APK_SOURCE="app/build/outputs/apk/debug/app-debug.apk"
-            [ -z "$APK_SOURCE" ] && APK_SOURCE=$(find app/build/outputs/apk/debug -name "*.apk" -type f 2>/dev/null | head -1)
-            [ -z "$APK_SOURCE" ] && APK_SOURCE=$(find app/build/outputs -name "*debug*.apk" -type f 2>/dev/null | head -1)
-            [ -z "$APK_SOURCE" ] && APK_SOURCE=$(find app/build -name "*debug*.apk" -type f 2>/dev/null | head -1)
+            if [ -d "app/build/outputs/apk/debug" ]; then
+              APK_SOURCE=$(find app/build/outputs/apk/debug -name "*.apk" -type f 2>/dev/null | head -1)
+            fi
+            if [ -z "$APK_SOURCE" ] && [ -d "app/build/outputs" ]; then
+              APK_SOURCE=$(find app/build/outputs -name "*debug*.apk" -type f 2>/dev/null | head -1)
+            fi
           fi
           
-          # Last resort: search entire directory
-          [ -z "$APK_SOURCE" ] && APK_SOURCE=$(find . -name "*.apk" -type f 2>/dev/null | head -1)
+          # If still not found, search more broadly
+          if [ -z "$APK_SOURCE" ]; then
+            echo "APK not found in standard locations, searching more broadly..."
+            APK_SOURCE=$(find app -name "*.apk" -type f 2>/dev/null | head -1)
+          fi
+          
+          # Last resort: search entire android directory
+          if [ -z "$APK_SOURCE" ]; then
+            echo "APK not found in app directory, searching entire android directory..."
+            APK_SOURCE=$(find . -name "*.apk" -type f 2>/dev/null | head -1)
+          fi
           
           if [ -z "$APK_SOURCE" ]; then
             echo "ERROR: APK file not found in any location!"
-            echo "Build may have failed or APK was not generated."
-            echo "Please check the build logs above for errors."
+            echo "Build directory structure:"
+            ls -la app/build/ 2>/dev/null || echo "app/build/ does not exist"
+            ls -la app/build/outputs/ 2>/dev/null || echo "app/build/outputs/ does not exist"
+            echo "All APK files in project:"
+            find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found anywhere"
             exit 1
           fi
           
           echo "Found APK at: $APK_SOURCE"
-          echo "APK file size:"
-          ls -lh "$APK_SOURCE"
-          
           mkdir -p ../../../output
           cp "$APK_SOURCE" "../../../output/${{ steps.version.outputs.APK_NAME }}.apk"
-          echo "APK copied to output directory:"
           ls -lh ../../../output/
 
       - name: Upload APK artifact

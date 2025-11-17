@@ -339,7 +339,7 @@ jobs:
             exit 1
           fi
           if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
-            echo "Kotlin version not set, setting to 2.0.20 (as specified in app.json)"
+            echo "Kotlin version not set, setting to 1.8.22 (compatible with React Native 0.81.x)"
             # Check if buildscript block exists
             if grep -q "buildscript" "$GRADLE_FILE"; then
               # Try to find dependencies block in buildscript and add ext before it
@@ -348,7 +348,7 @@ jobs:
                 awk '
                   /buildscript \{/ { in_buildscript=1; print; next }
                   in_buildscript && /dependencies \{/ { 
-                    print "    ext.kotlinVersion = \"2.0.20\""
+                    print "    ext.kotlinVersion = \"1.8.22\""
                     print
                     next
                   }
@@ -356,18 +356,18 @@ jobs:
                 ' "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
               else
                 # No dependencies block, add ext after buildscript {
-                sed -i '/buildscript {/a\    ext.kotlinVersion = "2.0.20"' "$GRADLE_FILE"
+                sed -i '/buildscript {/a\    ext.kotlinVersion = "1.8.22"' "$GRADLE_FILE"
               fi
             else
               # No buildscript, add at top level
-              echo "ext { kotlinVersion = \"2.0.20\" }" | cat - "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
+              echo "ext { kotlinVersion = \"1.8.22\" }" | cat - "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
             fi
             # Verify it was added
             if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
               echo "ERROR: Failed to set Kotlin version"
               exit 1
             fi
-            echo "Kotlin version 2.0.20 set successfully"
+            echo "Kotlin version 1.8.22 set successfully"
           else
             echo "ext.kotlinVersion already set in build.gradle"
             grep "kotlinVersion" "$GRADLE_FILE" || true

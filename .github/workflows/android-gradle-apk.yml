@@ -59,7 +59,7 @@ jobs:
         run: |
           # Install workspace at repo root so pnpm can hoist native deps correctly
           pnpm -v
-          pnpm install --no-lockfile --shamefully-hoist --force
+          pnpm install --no-lockfile --shamefully-hoist
 
       - name: Install workspace packages
         run: |
@@ -121,6 +121,42 @@ jobs:
         run: |
           # Install only mobile package dependencies in workspace root so pnpm filter works correctly
           pnpm install --no-lockfile --shamefully-hoist --filter ./packages/mobile...
+
+      - name: Verify dependency versions
+        run: |
+          echo "Verifying installed dependency versions match package.json..."
+          cd packages/mobile
+          # Check critical dependencies
+          echo "Checking expo version..."
+          EXPO_INSTALLED=$(pnpm list expo --depth=0 2>/dev/null | grep "expo@" | head -1 | awk '{print $2}' | sed 's/@//' || echo "NOT_FOUND")
+          EXPO_EXPECTED=$(node -p "require('./package.json').dependencies.expo" 2>/dev/null || echo "NOT_FOUND")
+          echo "Expo: expected $EXPO_EXPECTED, installed $EXPO_INSTALLED"
+          
+          echo "Checking expo-modules-core version..."
+          EXPO_CORE_INSTALLED=$(pnpm list expo-modules-core --depth=0 2>/dev/null | grep "expo-modules-core@" | head -1 | awk '{print $2}' | sed 's/@//' || echo "NOT_FOUND")
+          EXPO_CORE_EXPECTED=$(node -p "require('./package.json').dependencies['expo-modules-core']" 2>/dev/null || echo "NOT_FOUND")
+          echo "expo-modules-core: expected $EXPO_CORE_EXPECTED, installed $EXPO_CORE_INSTALLED"
+          
+          echo "Checking react-native version..."
+          RN_INSTALLED=$(pnpm list react-native --depth=0 2>/dev/null | grep "react-native@" | head -1 | awk '{print $2}' | sed 's/@//' || echo "NOT_FOUND")
+          RN_EXPECTED=$(node -p "require('./package.json').dependencies['react-native']" 2>/dev/null || echo "NOT_FOUND")
+          echo "react-native: expected $RN_EXPECTED, installed $RN_INSTALLED"
+          
+          echo "Checking react-native-safe-area-context version..."
+          SAFE_AREA_INSTALLED=$(pnpm list react-native-safe-area-context --depth=0 2>/dev/null | grep "react-native-safe-area-context@" | head -1 | awk '{print $2}' | sed 's/@//' || echo "NOT_FOUND")
+          SAFE_AREA_EXPECTED=$(node -p "require('./package.json').dependencies['react-native-safe-area-context']" 2>/dev/null || echo "NOT_FOUND")
+          echo "react-native-safe-area-context: expected $SAFE_AREA_EXPECTED, installed $SAFE_AREA_INSTALLED"
+          
+          # Check for major version mismatches (warn but don't fail)
+          if [ "$EXPO_INSTALLED" != "NOT_FOUND" ] && [ "$EXPO_EXPECTED" != "NOT_FOUND" ]; then
+            EXPO_MAJOR_INSTALLED=$(echo "$EXPO_INSTALLED" | cut -d. -f1)
+            EXPO_MAJOR_EXPECTED=$(echo "$EXPO_EXPECTED" | cut -d. -f1 | sed 's/~//')
+            if [ "$EXPO_MAJOR_INSTALLED" != "$EXPO_MAJOR_EXPECTED" ]; then
+              echo "WARNING: Major version mismatch for expo: expected $EXPO_MAJOR_EXPECTED.x, got $EXPO_MAJOR_INSTALLED.x"
+            fi
+          fi
+          
+          echo "Dependency version check completed"
 
       - name: Ensure expo-modules-core present in mobile package (defensive)
         run: |
@@ -276,7 +312,7 @@ jobs:
               tail -30 "prebuild-attempt-$i.log"
               if [ $i -lt 3 ]; then
                 echo "Retrying in 5s..."
-                sleep 5
+            sleep 5
               fi
             fi
           done
@@ -339,7 +375,7 @@ jobs:
             exit 1
           fi
           if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
-            echo "Kotlin version not set, setting to 1.8.22 (compatible with React Native 0.81.x)"
+            echo "Kotlin version not set, setting to 2.0.20 (required by Expo SDK 54, matches app.json)"
             # Check if buildscript block exists
             if grep -q "buildscript" "$GRADLE_FILE"; then
               # Try to find dependencies block in buildscript and add ext before it
@@ -348,7 +384,7 @@ jobs:
                 awk '
                   /buildscript \{/ { in_buildscript=1; print; next }
                   in_buildscript && /dependencies \{/ { 
-                    print "    ext.kotlinVersion = \"1.8.22\""
+                    print "    ext.kotlinVersion = \"2.0.20\""
                     print
                     next
                   }
@@ -356,22 +392,62 @@ jobs:
                 ' "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
               else
                 # No dependencies block, add ext after buildscript {
-                sed -i '/buildscript {/a\    ext.kotlinVersion = "1.8.22"' "$GRADLE_FILE"
+                sed -i '/buildscript {/a\    ext.kotlinVersion = "2.0.20"' "$GRADLE_FILE"
               fi
             else
               # No buildscript, add at top level
-              echo "ext { kotlinVersion = \"1.8.22\" }" | cat - "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
+              echo "ext { kotlinVersion = \"2.0.20\" }" | cat - "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
             fi
             # Verify it was added
             if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
               echo "ERROR: Failed to set Kotlin version"
               exit 1
             fi
-            echo "Kotlin version 1.8.22 set successfully"
+            echo "Kotlin version 2.0.20 set successfully"
           else
             echo "ext.kotlinVersion already set in build.gradle"
             grep "kotlinVersion" "$GRADLE_FILE" || true
           fi
+          
+          # Verify Kotlin version matches app.json
+          echo "Verifying Kotlin version matches app.json..."
+          APP_JSON_KOTLIN=$(node -p "require('../../app.json').expo.plugins.find(p => Array.isArray(p) && p[0] === 'expo-build-properties')?.[1]?.android?.kotlinVersion || 'NOT_FOUND'" 2>/dev/null || echo "NOT_FOUND")
+          GRADLE_KOTLIN=$(grep "ext.kotlinVersion" "$GRADLE_FILE" | head -1 | sed 's/.*kotlinVersion.*"\([^"]*\)".*/\1/' || echo "NOT_FOUND")
+          
+          echo "app.json kotlinVersion: $APP_JSON_KOTLIN"
+          echo "build.gradle kotlinVersion: $GRADLE_KOTLIN"
+          
+          if [ "$APP_JSON_KOTLIN" != "NOT_FOUND" ] && [ "$GRADLE_KOTLIN" != "NOT_FOUND" ]; then
+            if [ "$APP_JSON_KOTLIN" != "$GRADLE_KOTLIN" ]; then
+              echo "WARNING: Kotlin version mismatch between app.json ($APP_JSON_KOTLIN) and build.gradle ($GRADLE_KOTLIN)"
+              echo "Updating build.gradle to match app.json..."
+              # Update the version in build.gradle to match app.json
+              sed -i "s/ext.kotlinVersion = \".*\"/ext.kotlinVersion = \"$APP_JSON_KOTLIN\"/g" "$GRADLE_FILE"
+              sed -i "s/kotlinVersion = \".*\"/kotlinVersion = \"$APP_JSON_KOTLIN\"/g" "$GRADLE_FILE"
+              echo "Updated build.gradle to use Kotlin $APP_JSON_KOTLIN"
+            else
+              echo "✅ Kotlin version sync verified: $GRADLE_KOTLIN"
+            fi
+          else
+            echo "Could not verify Kotlin version sync (app.json: $APP_JSON_KOTLIN, build.gradle: $GRADLE_KOTLIN)"
+          fi
+
+      - name: Verify Gradle dependencies and versions
+        working-directory: packages/mobile/android
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+        run: |
+          echo "Checking Gradle configuration and dependencies..."
+          chmod +x gradlew
+          # Check Kotlin version in build.gradle
+          if grep -q "ext.kotlinVersion" build.gradle; then
+            KOTLIN_VER=$(grep "ext.kotlinVersion" build.gradle | head -1 | sed 's/.*kotlinVersion.*"\([^"]*\)".*/\1/')
+            echo "Kotlin version in build.gradle: $KOTLIN_VER"
+          fi
+          # Run gradle dependencies to see resolved versions (limited output)
+          echo "Checking resolved dependency versions..."
+          ./gradlew dependencies --configuration debugRuntimeClasspath 2>&1 | grep -E "(expo-modules-core|react-native-safe-area-context|kotlin)" | head -20 || true
+          echo "Gradle dependency check completed"
 
       - name: Gradle clean
         working-directory: packages/mobile/android
@@ -452,6 +528,16 @@ jobs:
             grep -i "FAILED\|ERROR" "$LOG_FILE" | tail -30 || true
             echo "Last 100 lines of build log:"
             tail -100 "$LOG_FILE"
+            # Show Kotlin-specific errors if any
+            echo "Kotlin compilation errors (if any):"
+            grep -i "kotlin\|ksp" "$LOG_FILE" | tail -20 || true
+            # If Kotlin compilation failed, run focused debug
+            if grep -qi "compile.*kotlin.*failed\|kotlin.*compilation.*error" "$LOG_FILE"; then
+              echo "Running focused Kotlin compilation debug..."
+              ./gradlew :react-native-safe-area-context:compileDebugKotlin --info --stacktrace 2>&1 | tee debug-kotlin.log || true
+              echo "Focused Kotlin debug output:"
+              tail -50 debug-kotlin.log || true
+            fi
             exit 1
           fi
           echo "Gradle build succeeded. Checking for APK..."

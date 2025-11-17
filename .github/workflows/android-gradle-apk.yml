@@ -193,7 +193,7 @@ jobs:
               -Pandroid.injected.signing.key.password="$ANDROID_KEY_ALIAS_PASSWORD" \
               --info --stacktrace
           else
-            ./gradlew assembleDebug --info --stacktrace
+            ./gradlew assembleDebug --info --stacktrace --warning-mode all 2>&1 | tee build.log || (cat build.log && exit 1)
           fi
 
       - name: Rename APK with timestamp

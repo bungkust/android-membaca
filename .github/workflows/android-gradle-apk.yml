@@ -52,19 +52,36 @@ jobs:
       - name: Complete cleanup
         run: |
           rm -rf node_modules packages/*/node_modules packages/*/.expo
-          rm -f pnpm-lock.yaml yarn.lock package-lock.json
+          # Keep pnpm-lock.yaml if it exists for deterministic installs
+          # Only remove other lockfiles
+          rm -f yarn.lock package-lock.json
           pnpm store prune || true
+          # Verify if lockfile exists
+          if [ -f "pnpm-lock.yaml" ]; then
+            echo "pnpm-lock.yaml found - will use --frozen-lockfile for deterministic installs"
+          else
+            echo "pnpm-lock.yaml not found - will use --shamefully-hoist without lockfile"
+          fi
 
       - name: Re-install dependencies with hoisting (CI-safe)
         run: |
           # Install workspace at repo root so pnpm can hoist native deps correctly
           pnpm -v
-          pnpm install --no-lockfile --shamefully-hoist
+          # Use frozen-lockfile if lockfile exists, otherwise use shamefully-hoist for deterministic installs
+          if [ -f "pnpm-lock.yaml" ]; then
+            pnpm install --frozen-lockfile --shamefully-hoist
+          else
+            pnpm install --shamefully-hoist
+          fi
 
       - name: Install workspace packages
         run: |
           # Install all workspace packages explicitly
-          pnpm install --no-lockfile --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts"
+          if [ -f "pnpm-lock.yaml" ]; then
+            pnpm install --frozen-lockfile --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts"
+          else
+            pnpm install --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts"
+          fi
           # Verify workspace packages exist (check both hoisted and local locations)
           if [ ! -d "node_modules/@repo/core" ] && [ ! -d "packages/core/node_modules" ]; then
             echo "ERROR: @repo/core not found after install"
@@ -120,7 +137,11 @@ jobs:
       - name: Install mobile package deps (CI-safe)
         run: |
           # Install only mobile package dependencies in workspace root so pnpm filter works correctly
-          pnpm install --no-lockfile --shamefully-hoist --filter ./packages/mobile...
+          if [ -f "pnpm-lock.yaml" ]; then
+            pnpm install --frozen-lockfile --shamefully-hoist --filter ./packages/mobile...
+          else
+            pnpm install --shamefully-hoist --filter ./packages/mobile...
+          fi
 
       - name: Verify dependency versions
         run: |
@@ -160,67 +181,34 @@ jobs:
 
       - name: Ensure expo-modules-core present in mobile package (defensive)
         run: |
-          # Check if package exists first
-          if [ ! -d "packages/mobile/node_modules/expo-modules-core" ]; then
-            echo "expo-modules-core not installed, installing version 3.0.25..."
-            pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --no-lockfile --shamefully-hoist
-          fi
-          # Check for Kotlin sources in multiple possible locations
-          KOTLIN_FOUND=false
-          EXPO_MODULES_PATH="packages/mobile/node_modules/expo-modules-core"
+          # Ensure expo-modules-core is installed in the mobile workspace and contains Kotlin files
+          EXPO_MOD_PATH="packages/mobile/node_modules/expo-modules-core"
           
-          # Check standard location
-          if [ -d "$EXPO_MODULES_PATH/android/src/main/kotlin" ]; then
-            KOTLIN_FOUND=true
-            echo "Kotlin sources found in android/src/main/kotlin"
-          # Check if Kotlin files exist anywhere in android directory
-          elif find "$EXPO_MODULES_PATH/android" -name "*.kt" -type f 2>/dev/null | grep -q .; then
-            KOTLIN_FOUND=true
-            echo "Kotlin files found in android directory (non-standard location)"
-            find "$EXPO_MODULES_PATH/android" -name "*.kt" -type f 2>/dev/null | head -5
-          # Check if android folder exists and has build.gradle (might be sufficient)
-          elif [ -d "$EXPO_MODULES_PATH/android" ] && [ -f "$EXPO_MODULES_PATH/android/build.gradle" ]; then
-            echo "android folder and build.gradle exist, checking structure..."
-            echo "android/src structure:"
-            ls -la "$EXPO_MODULES_PATH/android/src" 2>/dev/null || true
-            find "$EXPO_MODULES_PATH/android/src" -type d 2>/dev/null | head -10 || true
-            # If android folder exists with build.gradle, assume it's valid (Gradle will handle it)
-            echo "android folder exists with build.gradle - assuming valid (Gradle will resolve sources)"
-            KOTLIN_FOUND=true
-          fi
-          
-          if [ "$KOTLIN_FOUND" != "true" ]; then
-            echo "expo-modules-core android structure not found, checking package..."
-            ls -la "$EXPO_MODULES_PATH/" || true
-            ls -la "$EXPO_MODULES_PATH/android" 2>/dev/null || echo "android folder missing"
-            echo "Trying latest compatible version..."
-            pnpm --filter ./packages/mobile... add expo-modules-core@latest --no-lockfile --shamefully-hoist
-            # Re-check after reinstall
-            if [ -d "$EXPO_MODULES_PATH/android" ] && [ -f "$EXPO_MODULES_PATH/android/build.gradle" ]; then
-              echo "android folder and build.gradle found after reinstall - assuming valid"
-              KOTLIN_FOUND=true
-            elif find "$EXPO_MODULES_PATH/android" -name "*.kt" -type f 2>/dev/null | grep -q .; then
-              echo "Kotlin files found after reinstall"
-              KOTLIN_FOUND=true
-            fi
-          fi
-          
-          # Final check - if still not found, show structure but don't fail if android/build.gradle exists
-          if [ "$KOTLIN_FOUND" != "true" ]; then
-            if [ -d "$EXPO_MODULES_PATH/android" ] && [ -f "$EXPO_MODULES_PATH/android/build.gradle" ]; then
-              echo "WARNING: Standard Kotlin source location not found, but android/build.gradle exists"
-              echo "Package structure:"
-              find "$EXPO_MODULES_PATH/android" -type d -maxdepth 3 | head -20 || true
-              echo "Continuing - Gradle may be able to resolve sources from build.gradle"
+          # Check if Kotlin files exist
+          if [ ! -d "$EXPO_MOD_PATH" ] || ! find "$EXPO_MOD_PATH/android" -name "*.kt" -print -quit >/dev/null 2>&1; then
+            echo "expo-modules-core kotlin sources missing or package missing; reinstalling expo-modules-core@3.0.25..."
+            if [ -f "pnpm-lock.yaml" ]; then
+              pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --frozen-lockfile --shamefully-hoist
             else
-              echo "ERROR: expo-modules-core android structure not found"
-              echo "Package structure:"
-              find "$EXPO_MODULES_PATH" -type d -maxdepth 2 | head -20 || true
-              exit 1
+              pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --shamefully-hoist
             fi
-          else
-            echo "expo-modules-core verified"
           fi
+          
+          # Verify again - must find actual Kotlin files
+          if ! find "$EXPO_MOD_PATH/android" -name "*.kt" -print -quit >/dev/null 2>&1; then
+            echo "ERROR: expo-modules-core Kotlin sources still missing. Listing package tree for debugging:"
+            ls -la "$EXPO_MOD_PATH" || true
+            find "$EXPO_MOD_PATH" -maxdepth 4 -type f | head -200 || true
+            echo "Checking android directory structure:"
+            ls -la "$EXPO_MOD_PATH/android" 2>/dev/null || echo "android directory missing"
+            find "$EXPO_MOD_PATH/android" -type d 2>/dev/null | head -20 || true
+            exit 1
+          fi
+          
+          echo "expo-modules-core kotlin sources present"
+          # Show where Kotlin files are located
+          echo "Kotlin files found at:"
+          find "$EXPO_MOD_PATH/android" -name "*.kt" -type f 2>/dev/null | head -10 || true
 
       - name: "Debug: verify expo-modules-core layout"
         run: |
@@ -247,21 +235,20 @@ jobs:
       - name: Pre-prebuild verification
         run: |
           echo "Verifying all critical dependencies before prebuild..."
-          # Verify expo-modules-core - check multiple possible locations
+          # Verify expo-modules-core - must have actual Kotlin files
           EXPO_MODULES_PATH="packages/mobile/node_modules/expo-modules-core"
-          EXPO_MODULES_VALID=false
-          if [ -d "$EXPO_MODULES_PATH/android/src/main/kotlin" ]; then
-            EXPO_MODULES_VALID=true
-          elif find "$EXPO_MODULES_PATH/android" -name "*.kt" -type f 2>/dev/null | grep -q .; then
-            EXPO_MODULES_VALID=true
-          elif [ -d "$EXPO_MODULES_PATH/android" ] && [ -f "$EXPO_MODULES_PATH/android/build.gradle" ]; then
-            EXPO_MODULES_VALID=true
-            echo "expo-modules-core android folder exists with build.gradle (sources may be in non-standard location)"
-          fi
-          if [ "$EXPO_MODULES_VALID" != "true" ]; then
-            echo "ERROR: expo-modules-core android structure not found"
+          if [ ! -d "$EXPO_MODULES_PATH" ]; then
+            echo "ERROR: expo-modules-core package not found"
             exit 1
           fi
+          if ! find "$EXPO_MODULES_PATH/android" -name "*.kt" -type f 2>/dev/null | grep -q .; then
+            echo "ERROR: expo-modules-core Kotlin sources not found"
+            echo "Package structure:"
+            ls -la "$EXPO_MODULES_PATH" || true
+            find "$EXPO_MODULES_PATH/android" -type d 2>/dev/null | head -20 || true
+            exit 1
+          fi
+          echo "✅ expo-modules-core Kotlin sources verified"
           # Verify react-native-safe-area-context has sources
           if [ ! -d "packages/mobile/node_modules/react-native-safe-area-context/android/src/main/java" ] && [ ! -d "packages/mobile/node_modules/react-native-safe-area-context/android/src/main/kotlin" ]; then
             echo "WARNING: react-native-safe-area-context sources not found, but continuing..."
@@ -485,6 +472,29 @@ jobs:
           else
             echo "Keystore creation failed!"
             exit 1
+          fi
+
+      - name: Debug Kotlin compile for react-native-safe-area-context
+        working-directory: packages/mobile/android
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+        run: |
+          echo "Running focused Kotlin compilation check for react-native-safe-area-context..."
+          chmod +x gradlew
+          ./gradlew :react-native-safe-area-context:compileDebugKotlin --info --stacktrace --warning-mode all 2>&1 | tee debug-kotlin.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "---- last 200 lines of debug-kotlin.log ----"
+          tail -200 debug-kotlin.log || true
+          
+          # If it failed, copy artifact for inspection
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "Kotlin compilation failed with exit code $EXIT_CODE"
+            cp debug-kotlin.log ../../debug-kotlin-react-native-safe-area-context.log || true
+            echo "Kotlin-specific errors:"
+            grep -i "kotlin\|ksp\|compilation\|error" debug-kotlin.log | tail -50 || true
+            echo "WARNING: Kotlin compilation failed, but continuing to full build for complete error output"
+          else
+            echo "✅ Kotlin compilation succeeded"
           fi
 
       - name: Build APK with Gradle

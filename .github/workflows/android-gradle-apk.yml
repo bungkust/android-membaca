@@ -46,7 +46,7 @@ jobs:
           rm -f pnpm-lock.yaml yarn.lock package-lock.json
 
       - name: Re-install dependencies with hoisting (CI-safe)
-        run: pnpm install --no-frozen-lockfile --shamefully-hoist
+        run: pnpm install --no-lockfile --shamefully-hoist
 
       - name: "Debug: verify installs and expo-modules-core"
         run: |
@@ -74,14 +74,14 @@ jobs:
       - name: Install mobile package deps (CI-safe)
         working-directory: packages/mobile
         run: |
-          pnpm install --no-frozen-lockfile --shamefully-hoist --filter ./packages/mobile...
+          pnpm install --no-lockfile --shamefully-hoist --filter ./packages/mobile...
 
       - name: Ensure expo-modules-core present in mobile package (defensive)
         working-directory: packages/mobile
         run: |
           if [ ! -d node_modules/expo-modules-core/android/src/main/kotlin ]; then
             echo "expo-modules-core kotlin sources missing in packages/mobile — installing"
-            pnpm add expo-modules-core@3.0.25 --filter ./packages/mobile... --no-frozen-lockfile || true
+            pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --no-lockfile || true
           else
             echo "expo-modules-core kotlin sources already present in packages/mobile"
           fi

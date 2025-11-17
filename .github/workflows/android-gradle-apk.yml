@@ -196,20 +196,40 @@ jobs:
             ./gradlew assembleDebug --info --stacktrace --warning-mode all 2>&1 | tee build.log || (cat build.log && exit 1)
           fi
 
-      - name: Rename APK with timestamp
+      - name: Find and rename APK with timestamp
+        working-directory: packages/mobile/android
         run: |
+          echo "Searching for APK files..."
+          echo "Build outputs directory structure:"
+          find app/build/outputs -type f -name "*.apk" 2>/dev/null | head -20 || true
+          echo ""
+          echo "Full outputs directory:"
+          ls -la app/build/outputs/ 2>/dev/null || true
+          echo ""
+          
           if [ "${{ inputs.buildType }}" = "release" ]; then
-            APK_SOURCE=$(find packages/mobile/android/app/build/outputs/apk/release -name "app-release.apk" | head -1)
+            APK_SOURCE=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -1)
+            if [ -z "$APK_SOURCE" ]; then
+              APK_SOURCE=$(find app/build/outputs -name "*release*.apk" -type f | head -1)
+            fi
           else
-            APK_SOURCE=$(find packages/mobile/android/app/build/outputs/apk/debug -name "app-debug.apk" | head -1)
+            APK_SOURCE=$(find app/build/outputs/apk/debug -name "*.apk" -type f | head -1)
+            if [ -z "$APK_SOURCE" ]; then
+              APK_SOURCE=$(find app/build/outputs -name "*debug*.apk" -type f | head -1)
+            fi
           fi
+          
           if [ -z "$APK_SOURCE" ]; then
-            echo "APK file not found!"
+            echo "ERROR: APK file not found in any expected location!"
+            echo "Searching all build directories:"
+            find . -name "*.apk" -type f 2>/dev/null || true
             exit 1
           fi
-          mkdir -p output
-          cp "$APK_SOURCE" "output/${{ steps.version.outputs.APK_NAME }}.apk"
-          ls -lh output/
+          
+          echo "Found APK at: $APK_SOURCE"
+          mkdir -p ../../../output
+          cp "$APK_SOURCE" "../../../output/${{ steps.version.outputs.APK_NAME }}.apk"
+          ls -lh ../../../output/
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

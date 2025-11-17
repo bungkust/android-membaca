@@ -40,16 +40,45 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Clean node_modules and lockfiles
+      - name: Verify Android SDK environment
         run: |
-          rm -rf node_modules
+          echo "ANDROID_HOME: ${ANDROID_HOME:-NOT SET}"
+          echo "ANDROID_SDK_ROOT: ${ANDROID_SDK_ROOT:-NOT SET}"
+          if [ -z "$ANDROID_HOME" ] && [ -z "$ANDROID_SDK_ROOT" ]; then
+            echo "ERROR: Android SDK not configured"
+            exit 1
+          fi
+
+      - name: Complete cleanup
+        run: |
+          rm -rf node_modules packages/*/node_modules packages/*/.expo
           rm -f pnpm-lock.yaml yarn.lock package-lock.json
+          pnpm store prune || true
 
       - name: Re-install dependencies with hoisting (CI-safe)
         run: |
           # Install workspace at repo root so pnpm can hoist native deps correctly
           pnpm -v
-          pnpm install --no-lockfile --shamefully-hoist
+          pnpm install --no-lockfile --shamefully-hoist --force
+
+      - name: Install workspace packages
+        run: |
+          # Install all workspace packages explicitly
+          pnpm install --no-lockfile --shamefully-hoist --filter "./packages/core" --filter "./packages/storage" --filter "./packages/tts"
+          # Verify workspace packages exist (check both hoisted and local locations)
+          if [ ! -d "node_modules/@repo/core" ] && [ ! -d "packages/core/node_modules" ]; then
+            echo "ERROR: @repo/core not found after install"
+            exit 1
+          fi
+          if [ ! -d "node_modules/@repo/storage" ] && [ ! -d "packages/storage/node_modules" ]; then
+            echo "ERROR: @repo/storage not found after install"
+            exit 1
+          fi
+          if [ ! -d "node_modules/@repo/tts" ] && [ ! -d "packages/tts/node_modules" ]; then
+            echo "ERROR: @repo/tts not found after install"
+            exit 1
+          fi
+          echo "All workspace packages verified"
 
       - name: "Debug: verify installs and expo-modules-core"
         run: |
@@ -60,11 +89,25 @@ jobs:
           ls -la packages/mobile/node_modules | sed -n '1,200p' || true
           test -d packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin && echo "expo-modules-core kotlin present in packages/mobile" || echo "expo-modules-core kotlin MISSING in packages/mobile"
 
+      - name: Verify expo CLI
+        run: |
+          # Verify expo CLI is accessible and works
+          pnpm dlx expo --version || {
+            echo "ERROR: expo CLI not accessible"
+            exit 1
+          }
+          echo "expo CLI verified"
+
       - name: Get version info
         id: version
         working-directory: packages/mobile
         run: |
-          VERSION=$(node -p "require('./app.json').expo.version")
+          # Add error handling for app.json parsing
+          VERSION=$(node -p "require('./app.json').expo.version" 2>&1) || {
+            echo "ERROR: Failed to parse app.json"
+            cat app.json || true
+            exit 1
+          }
           BUILD_DATE=$(date +'%Y%m%d')
           BUILD_TIME=$(date +'%H%M%S')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -81,10 +124,32 @@ jobs:
 
       - name: Ensure expo-modules-core present in mobile package (defensive)
         run: |
-          if [ ! -d packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin ]; then
-            echo "expo-modules-core kotlin sources missing in packages/mobile — installing"
-            # Execute filtered add from workspace root so workspace metadata is updated and hoisting applied
-            pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --no-lockfile --shamefully-hoist || true
+          # Check if package exists first
+          if [ ! -d "packages/mobile/node_modules/expo-modules-core" ]; then
+            echo "expo-modules-core not installed, installing version 3.0.25..."
+            pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --no-lockfile --shamefully-hoist
+          fi
+          # Check for Kotlin sources
+          if [ ! -d "packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin" ]; then
+            echo "Kotlin sources missing, checking package structure..."
+            ls -la packages/mobile/node_modules/expo-modules-core/ || true
+            ls -la packages/mobile/node_modules/expo-modules-core/android/ || true
+            # Check if android folder exists at all
+            if [ ! -d "packages/mobile/node_modules/expo-modules-core/android" ]; then
+              echo "android folder missing, trying latest compatible version..."
+              pnpm --filter ./packages/mobile... add expo-modules-core@latest --no-lockfile --shamefully-hoist
+            else
+              echo "android folder exists but kotlin sources missing, trying latest version..."
+              pnpm --filter ./packages/mobile... add expo-modules-core@latest --no-lockfile --shamefully-hoist
+            fi
+            # Final verification
+            if [ ! -d "packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin" ]; then
+              echo "ERROR: expo-modules-core Kotlin sources still missing after reinstall"
+              echo "Package structure:"
+              find packages/mobile/node_modules/expo-modules-core -type d -maxdepth 3 | head -20 || true
+              exit 1
+            fi
+            echo "expo-modules-core Kotlin sources verified after reinstall"
           else
             echo "expo-modules-core kotlin sources already present in packages/mobile"
           fi
@@ -102,6 +167,39 @@ jobs:
           ls -la node_modules/.pnpm | grep expo-modules-core || true
           test -d packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin && echo "expo-modules-core kotlin present" || echo "expo-modules-core kotlin MISSING"
 
+      - name: Pre-prebuild verification
+        run: |
+          echo "Verifying all critical dependencies before prebuild..."
+          # Verify expo-modules-core Kotlin sources
+          if [ ! -d "packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin" ]; then
+            echo "ERROR: expo-modules-core Kotlin sources missing"
+            exit 1
+          fi
+          # Verify react-native-safe-area-context has sources
+          if [ ! -d "packages/mobile/node_modules/react-native-safe-area-context/android/src/main/java" ] && [ ! -d "packages/mobile/node_modules/react-native-safe-area-context/android/src/main/kotlin" ]; then
+            echo "WARNING: react-native-safe-area-context sources not found, but continuing..."
+          fi
+          # Verify react-native-screens has sources
+          if [ ! -d "packages/mobile/node_modules/react-native-screens/android/src/main/java" ] && [ ! -d "packages/mobile/node_modules/react-native-screens/android/src/main/kotlin" ]; then
+            echo "WARNING: react-native-screens sources not found, but continuing..."
+          fi
+          # Verify workspace packages are accessible
+          if [ ! -d "node_modules/@repo/core" ] && [ ! -d "packages/core/node_modules" ]; then
+            echo "ERROR: @repo/core not accessible"
+            exit 1
+          fi
+          # Verify app.json is valid JSON
+          node -e "require('./packages/mobile/app.json')" || {
+            echo "ERROR: app.json is invalid JSON"
+            exit 1
+          }
+          # Test expo CLI
+          pnpm dlx expo --version > /dev/null || {
+            echo "ERROR: expo CLI not functional"
+            exit 1
+          }
+          echo "All pre-prebuild verifications passed"
+
       - name: Prebuild Android (fixed)
         working-directory: packages/mobile
         env:
@@ -110,21 +208,44 @@ jobs:
           RCT_NEW_ARCH_ENABLED: 0
           NODE_ENV: production
         run: |
-          # Debug: show expo CLI version and help
+          # Debug: show expo CLI version
           pnpm dlx expo --version || true
-          pnpm dlx expo prebuild --help | sed -n '1,120p' || true
-          # Retry prebuild up to 3 times to avoid transient failures
+          # Prebuild with error capture on each attempt
+          PREBUILD_SUCCESS=false
           for i in 1 2 3; do
-            pnpm dlx expo prebuild --platform android --clean && break
-            echo "expo prebuild failed, retrying in 5s ($i/3)..."
-            sleep 5
+            echo "Prebuild attempt $i/3"
+            pnpm dlx expo prebuild --platform android --clean 2>&1 | tee "prebuild-attempt-$i.log"
+            EXIT_CODE=${PIPESTATUS[0]}
+            if [ $EXIT_CODE -eq 0 ] && [ -d android ]; then
+              PREBUILD_SUCCESS=true
+              echo "Prebuild succeeded on attempt $i"
+              break
+            else
+              echo "Attempt $i failed with exit code $EXIT_CODE. Last 30 lines:"
+              tail -30 "prebuild-attempt-$i.log"
+              if [ $i -lt 3 ]; then
+                echo "Retrying in 5s..."
+                sleep 5
+              fi
+            fi
           done
-          # Fail early if android folder not created
-          if [ ! -d android ]; then
-            echo "ERROR: expo prebuild did not create android/ — aborting"
+          if [ "$PREBUILD_SUCCESS" != "true" ]; then
+            echo "Prebuild failed after 3 attempts. Showing all logs:"
+            for log in prebuild-attempt-*.log; do
+              echo "=== $log ==="
+              cat "$log" || true
+            done
+            echo "Current directory contents:"
             ls -la || true
             exit 1
           fi
+          # Verify android folder structure
+          if [ ! -d android/app ] || [ ! -f android/build.gradle ] || [ ! -d android/gradle ]; then
+            echo "ERROR: android/ folder structure incomplete"
+            ls -la android/ || true
+            exit 1
+          fi
+          echo "Android project structure verified"
 
       - name: Show expo config (debug)
         working-directory: packages/mobile
@@ -153,22 +274,43 @@ jobs:
         working-directory: packages/mobile/android
         run: |
           GRADLE_FILE="build.gradle"
-          if [ -f "$GRADLE_FILE" ]; then
-            if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
-              echo "Kotlin version not explicitly set, checking if needed..."
-              # Check if kotlin is referenced in buildscript
-              if grep -q "kotlin" "$GRADLE_FILE"; then
-                echo "Kotlin detected but version not set - this may cause compilation issues"
-                echo "Consider setting ext.kotlinVersion in build.gradle if compilation fails"
+          if [ ! -f "$GRADLE_FILE" ]; then
+            echo "ERROR: build.gradle not found"
+            exit 1
+          fi
+          if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
+            echo "Kotlin version not set, setting to 2.0.20 (as specified in app.json)"
+            # Check if buildscript block exists
+            if grep -q "buildscript" "$GRADLE_FILE"; then
+              # Try to find dependencies block in buildscript and add ext before it
+              if grep -q "dependencies" "$GRADLE_FILE"; then
+                # Use awk to insert ext.kotlinVersion before dependencies in buildscript
+                awk '
+                  /buildscript \{/ { in_buildscript=1; print; next }
+                  in_buildscript && /dependencies \{/ { 
+                    print "    ext.kotlinVersion = \"2.0.20\""
+                    print
+                    next
+                  }
+                  { print }
+                ' "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
               else
-                echo "No Kotlin references found in build.gradle"
+                # No dependencies block, add ext after buildscript {
+                sed -i '/buildscript {/a\    ext.kotlinVersion = "2.0.20"' "$GRADLE_FILE"
               fi
             else
-              echo "ext.kotlinVersion already set in build.gradle"
-              grep "ext.kotlinVersion" "$GRADLE_FILE" || true
+              # No buildscript, add at top level
+              echo "ext { kotlinVersion = \"2.0.20\" }" | cat - "$GRADLE_FILE" > "$GRADLE_FILE.tmp" && mv "$GRADLE_FILE.tmp" "$GRADLE_FILE"
             fi
+            # Verify it was added
+            if ! grep -q "ext.kotlinVersion" "$GRADLE_FILE"; then
+              echo "ERROR: Failed to set Kotlin version"
+              exit 1
+            fi
+            echo "Kotlin version 2.0.20 set successfully"
           else
-            echo "Warning: build.gradle not found at $GRADLE_FILE"
+            echo "ext.kotlinVersion already set in build.gradle"
+            grep "kotlinVersion" "$GRADLE_FILE" || true
           fi
 
       - name: Gradle clean
@@ -176,10 +318,17 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
         run: |
+          # Verify android directory and gradlew exist before cleaning
+          if [ ! -d "." ] || [ ! -f "gradlew" ]; then
+            echo "ERROR: android directory or gradlew not found"
+            exit 1
+          fi
           echo "Using JAVA_HOME: $JAVA_HOME"
           java -version
           chmod +x gradlew
-          ./gradlew clean
+          ./gradlew clean || {
+            echo "WARNING: gradlew clean failed, but continuing..."
+          }
 
       - name: Ensure assets directory exists
         working-directory: packages/mobile
@@ -218,7 +367,9 @@ jobs:
           echo "Using JAVA_HOME: $JAVA_HOME"
           java -version
           chmod +x gradlew
-          if [ "${{ inputs.buildType }}" = "release" ]; then
+          BUILD_TYPE="${{ inputs.buildType }}"
+          LOG_FILE="gradle-build-${BUILD_TYPE}.log"
+          if [ "$BUILD_TYPE" = "release" ]; then
             KEYSTORE_PATH="$(pwd)/app/release.keystore"
             if [ ! -f "$KEYSTORE_PATH" ]; then
               echo "ERROR: Keystore not found at $KEYSTORE_PATH"
@@ -229,14 +380,26 @@ jobs:
               -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
               -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
               -Pandroid.injected.signing.key.password="$ANDROID_KEY_ALIAS_PASSWORD" \
-              --info --stacktrace
+              --info --stacktrace 2>&1 | tee "$LOG_FILE"
+            EXIT_CODE=${PIPESTATUS[0]}
           else
-            ./gradlew assembleDebug --info --stacktrace --warning-mode all 2>&1 | tee build.log || (cat build.log && exit 1)
+            ./gradlew assembleDebug --info --stacktrace --warning-mode all 2>&1 | tee "$LOG_FILE"
+            EXIT_CODE=${PIPESTATUS[0]}
           fi
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "Gradle build failed with exit code $EXIT_CODE"
+            echo "Error summary:"
+            grep -i "FAILED\|ERROR" "$LOG_FILE" | tail -30 || true
+            echo "Last 100 lines of build log:"
+            tail -100 "$LOG_FILE"
+            exit 1
+          fi
+          echo "Gradle build succeeded. Checking for APK..."
 
       - name: Verify build output exists
         working-directory: packages/mobile/android
         run: |
+          # Only run if previous build step succeeded (check exit code from build step)
           echo "Checking build output directories..."
           echo "Current directory: $(pwd)"
           echo "App directory exists: $([ -d app ] && echo 'YES' || echo 'NO')"
@@ -247,8 +410,15 @@ jobs:
               if [ -d app/build/outputs ]; then
                 echo "Listing app/build/outputs:"
                 ls -la app/build/outputs/ || true
+              else
+                echo "WARNING: app/build/outputs does not exist - build may have failed"
               fi
+            else
+              echo "WARNING: app/build does not exist - build may have failed"
             fi
+          else
+            echo "ERROR: app directory does not exist"
+            exit 1
           fi
           echo "Searching for any APK files in app directory:"
           find app -name "*.apk" -type f 2>/dev/null | head -10 || echo "No APK files found in app directory"

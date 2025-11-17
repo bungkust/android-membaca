@@ -46,7 +46,10 @@ jobs:
           rm -f pnpm-lock.yaml yarn.lock package-lock.json
 
       - name: Re-install dependencies with hoisting (CI-safe)
-        run: pnpm install --no-lockfile --shamefully-hoist
+        run: |
+          # Install workspace at repo root so pnpm can hoist native deps correctly
+          pnpm -v
+          pnpm install --no-lockfile --shamefully-hoist
 
       - name: "Debug: verify installs and expo-modules-core"
         run: |
@@ -72,19 +75,32 @@ jobs:
           echo "APK Name: belajar-membaca-v${VERSION}-${{ inputs.buildType }}-${BUILD_DATE}-${BUILD_TIME}"
 
       - name: Install mobile package deps (CI-safe)
-        working-directory: packages/mobile
         run: |
+          # Install only mobile package dependencies in workspace root so pnpm filter works correctly
           pnpm install --no-lockfile --shamefully-hoist --filter ./packages/mobile...
 
       - name: Ensure expo-modules-core present in mobile package (defensive)
-        working-directory: packages/mobile
         run: |
-          if [ ! -d node_modules/expo-modules-core/android/src/main/kotlin ]; then
+          if [ ! -d packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin ]; then
             echo "expo-modules-core kotlin sources missing in packages/mobile — installing"
-            pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --no-lockfile || true
+            # Execute filtered add from workspace root so workspace metadata is updated and hoisting applied
+            pnpm --filter ./packages/mobile... add expo-modules-core@3.0.25 --no-lockfile --shamefully-hoist || true
           else
             echo "expo-modules-core kotlin sources already present in packages/mobile"
           fi
+
+      - name: "Debug: verify expo-modules-core layout"
+        run: |
+          echo "Root pnpm listing (trimmed):"
+          ls -la node_modules/.pnpm | sed -n '1,200p' || true
+          echo "Check expo-modules-core locations:"
+          find node_modules -path "*/expo-modules-core" -maxdepth 4 -type d -print || true
+          echo "packages/mobile/node_modules listing:"
+          ls -la packages/mobile/node_modules | sed -n '1,200p' || true
+          echo "Look for expo-modules-core paths:"
+          ls -la packages/mobile/node_modules/expo-modules-core || true
+          ls -la node_modules/.pnpm | grep expo-modules-core || true
+          test -d packages/mobile/node_modules/expo-modules-core/android/src/main/kotlin && echo "expo-modules-core kotlin present" || echo "expo-modules-core kotlin MISSING"
 
       - name: Prebuild Android (fixed)
         working-directory: packages/mobile
